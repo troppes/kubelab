@@ -19,7 +19,7 @@ API_PASSWORD=admin
 To set the primary admin.
 
 DEMO_DATA=FALSE
-This creates demo data to play around with the backend. The demo data creates three washing machines and a display user, which is useful for testing the frontend.
+This creates demo data to play around with the backend.
 
 ```PORT=3000```
 Set the desired port
@@ -33,8 +33,6 @@ Currently, there are 3 different user types to choose from:
 | Type | Rights |
 |---|---|
 | admin | ALL |
-| machine | WRITE / UPDATE / READ on machines |
-| display | READ on machines |
 
 ### Rights
 
@@ -46,18 +44,13 @@ The rights can be translated as follows
 | PUT | UPDATE |
 | DELETE | DELETE |
 
-### API documentation for the routes
-
-The documentation for the backend API can be found at [https://troppes.github.io/washtrak/](https://troppes.github.io/washtrak/).
-
 ### Insomnia
 
 The Insomnia folder in the root directory contains a document for testing all backend routes.
 
 ## Token expiry
 
-For this project, the JWT tokens are set to not expire, as the washing machine should update the inputs for a long time. If you need expiry for your project, it can be changed in the `middleware\auth.middleware.js` file.
+For this project, the JWT tokens are set to not expire. If you need expiry for your project, it can be changed in the `middleware\auth.middleware.js` file.
 
 ## Docker
 
-A dockerised version of the backend and documentation can be found at [https://hub.docker.com/r/floreitz/washtrak_frontend](https://hub.docker.com/r/floreitz/washtrak_frontend)

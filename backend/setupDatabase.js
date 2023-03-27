@@ -8,8 +8,8 @@ const db = new Database('database/database.db', {verbose: console.log});
 const saltRounds = 10;
 
 const DEMO_USERS = [
-    {username: 'washer', password: 'washer', type: 'machine'},
-    {username: 'display', password: 'display', type: 'display'}
+    {username: 's1', password: 's1', type: 'student'},
+    {username: 's2', password: 's2', type: 'student'}
 ]
 
 db.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, password_hash TEXT, type TEXT)");
