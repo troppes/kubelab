@@ -1,8 +1,8 @@
 {
-  "name": "washtrak-backend",
+  "name": "kubelab-backend",
   "version": "0.0.1",
   "type": "module",
-  "description": "The backend for washtrak",
+  "description": "The backend for kubelab",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,6 +11,7 @@
   "author": "Florian Reitz",
   "license": "ISC",
   "dependencies": {
+    "@kubernetes/client-node": "^0.18.1",
     "bcrypt": "^5.1.0",
     "better-sqlite3": "^7.6.2",
     "body-parser": "^1.20.1",
