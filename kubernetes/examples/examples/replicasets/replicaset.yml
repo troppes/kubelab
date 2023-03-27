@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: myapp-replicaset
+  labels:
+    app: myapp
+spec:
+  selector:
+    matchLabels:
+      env: prod
+  replicas: 2
+  template:
+    metadata:
+      name: nginx
+      labels: # like docker
+        app: nginx
+        env: prod
+    spec: # actual configuration
+      containers: # add containers as well as sidecars
+        - name: nginx
+          image: nginx
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          
