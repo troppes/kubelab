@@ -5,6 +5,7 @@ let userTypes = {
         routes: [
             {route: '/api/auth', rights: ['POST', 'GET', 'PUT', 'DELETE']},
             {route: '/api/users', rights: ['POST', 'GET', 'PUT', 'DELETE']},
+            {route: '/api/kube', rights: ['POST', 'GET', 'PUT', 'DELETE']},
         ]
     },
 }

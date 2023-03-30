@@ -4,6 +4,8 @@ import {authenticated, authMiddleware} from './middleware/auth.middleware.js';
 import {hasRights} from "./middleware/permission.middleware.js";
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import kubeRoutes from './routes/kube.routes.js';
+
 import * as dotenv from 'dotenv';
 import cors from 'cors';
 
@@ -24,3 +26,4 @@ app.use(authMiddleware);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authenticated, hasRights, userRoutes);
+app.use('/api/kube', authenticated, hasRights, kubeRoutes);
