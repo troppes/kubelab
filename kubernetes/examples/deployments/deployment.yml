@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: myapp-deployment
+  name: test-deployment
   labels:
     tier: frontend
     app: nginx
@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       env: prod
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       name: nginx
