@@ -1,0 +1,24 @@
+---
+# This File is modified to change from the default LoadBalancer to NodePort
+apiVersion: v1
+kind: Service
+metadata:
+  name: envoy
+  namespace: projectcontour
+  annotations:
+spec:
+  ports:
+  - port: 80
+    name: http
+    protocol: TCP
+    targetPort: 8080
+  - port: 443
+    name: https
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: envoy
+  externalIPs:
+      - 192.168.188.10
+      - 192.168.188.11
+      - 192.168.188.12
