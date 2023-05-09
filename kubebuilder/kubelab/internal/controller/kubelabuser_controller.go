@@ -34,6 +34,8 @@ import (
 	kubelabv1 "kubelab.local/kubelab/api/v1"
 )
 
+const userFinalizer = "kubeuser.kubelab.local/finalizer"
+
 // KubelabUserReconciler reconciles a KubelabUser object
 type KubelabUserReconciler struct {
 	client.Client
@@ -42,13 +44,9 @@ type KubelabUserReconciler struct {
 
 // Definitions to manage status conditions
 const (
-	// typeAvailableMemcached represents the status of the Deployment reconciliation
 	typeAvailableUser = "Available"
-	// typeDegradedMemcached represents the status used when the custom resource is deleted and the finalizer operations are must to occur.
-	typeDegradedUser = "Degraded"
+	typeDegradedUser  = "Degraded"
 )
-
-const userFinalizer = "kubeuser.kubelab.local/finalizer"
 
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers/status,verbs=get;update;patch
@@ -68,16 +66,16 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// The purpose is check if the Custom Resource for the Kind Memcached
 	// is applied on the cluster if not we return nil to stop the reconciliation
 	user := &kubelabv1.KubelabUser{}
+	log.Info(user.Spec.Id)
 	err := r.Get(ctx, req.NamespacedName, user)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// If the custom resource is not found then, it usually means that it was deleted or not created
 			// In this way, we will stop the reconciliation
-			log.Info("memcached resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		log.Error(err, "Failed to get memcached")
+		log.Error(err, "Failed to get User")
 		return ctrl.Result{}, err
 	}
 
@@ -85,7 +83,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if user.Status.Conditions == nil || len(user.Status.Conditions) == 0 {
 		meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailableUser, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
 		if err = r.Status().Update(ctx, user); err != nil {
-			log.Error(err, "Failed to update Memcached status")
+			log.Error(err, "Failed to update User status")
 			return ctrl.Result{}, err
 		}
 
@@ -95,7 +93,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// your changes to the latest version and try again" which would re-trigger the reconciliation
 		// if we try to update it again in the following operations
 		if err := r.Get(ctx, req.NamespacedName, user); err != nil {
-			log.Error(err, "Failed to re-fetch memcached")
+			log.Error(err, "Failed to re-fetch user")
 			return ctrl.Result{}, err
 		}
 	}
@@ -104,7 +102,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// occurs before the custom resource to be deleted.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers
 	if !controllerutil.ContainsFinalizer(user, userFinalizer) {
-		log.Info("Adding Finalizer for Memcached")
+		log.Info("Adding Finalizer to User")
 		if ok := controllerutil.AddFinalizer(user, userFinalizer); !ok {
 			log.Error(err, "Failed to add finalizer into the custom resource")
 			return ctrl.Result{Requeue: true}, nil
@@ -116,7 +114,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 	}
 
-	// Check if the Memcached instance is marked to be deleted, which is
+	// Check if the User instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.
 	isUserMarkedToBeDeleted := user.GetDeletionTimestamp() != nil
 	if isUserMarkedToBeDeleted {
@@ -133,16 +131,20 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				return ctrl.Result{}, err
 			}
 
-			// Perform all operations required before remove the finalizer and allow
-			// the Kubernetes API to remove the custom resource.
-			r.doFinalizerOperations(user)
+			// Since the Owners Reference does not delete the Namespace the Finalizer is used
+			namespaceName := user.Spec.Id
+			ns := &v1.Namespace{}
+			err := r.Get(ctx, client.ObjectKey{Name: namespaceName}, ns)
+			if err == nil {
+				err = r.Delete(ctx, ns)
+				if err != nil {
+					log.Error(err, "Failed to delete Namespace", "Namespace Name", namespaceName)
+					return ctrl.Result{}, err
+				}
+				log.Info("Deleted Namespace", "Namespace Name", namespaceName)
+			}
 
-			// TODO(user): If you add operations to the doFinalizerOperationsForMemcached method
-			// then you need to ensure that all worked fine before deleting and updating the Downgrade status
-			// otherwise, you should requeue here.
-
-			// Re-fetch the memcached Custom Resource before update the status
-			// so that we have the latest state of the resource on the cluster and we will avoid
+			// Re-fetch so that we have the latest state of the resource on the cluster and we will avoid
 			// raise the issue "the object has been modified, please apply
 			// your changes to the latest version and try again" which would re-trigger the reconciliation
 			if err := r.Get(ctx, req.NamespacedName, user); err != nil {
@@ -179,6 +181,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if err != nil && apierrors.IsNotFound(err) {
 		// Define a new deployment
 		ns, err := r.namespaceForUser(user)
+
 		if err != nil {
 			log.Error(err, "Failed to define new NS resource for user")
 
@@ -196,6 +199,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 
 		log.Info("Creating a new NS", "Namespace Name", ns.Name)
+
 		if err = r.Create(ctx, ns); err != nil {
 			log.Error(err, "Failed to create new Namespace", "Namespace Name", ns.Name)
 			return ctrl.Result{}, err
@@ -224,20 +228,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return ctrl.Result{}, nil
 }
 
-// finalizeMemcached will perform the required operations before delete the CR.
-func (r *KubelabUserReconciler) doFinalizerOperations(cr *kubelabv1.KubelabUser) {
-	// TODO(user): Add the cleanup steps that the operator
-	// needs to do before the CR can be deleted. Examples
-	// of finalizers include performing backups and deleting
-	// resources that are not owned by this CR, like a PVC.
-
-	// Note: It is not recommended to use finalizers with the purpose of delete resources which are
-	// created and managed in the reconciliation. These ones, such as the Deployment created on this reconcile,
-	// are defined as depended of the custom resource. See that we use the method ctrl.SetControllerReference.
-	// to set the ownerRef which means that the Deployment will be deleted by the Kubernetes API.
-	// More info: https://kubernetes.io/docs/tasks/administer-cluster/use-cascading-deletion/
-}
-
 // deploymentForMemcached returns a Memcached Deployment object
 func (r *KubelabUserReconciler) namespaceForUser(user *kubelabv1.KubelabUser) (*v1.Namespace, error) {
 	ls := labelsForUser(user.Spec.Id)
@@ -249,7 +239,7 @@ func (r *KubelabUserReconciler) namespaceForUser(user *kubelabv1.KubelabUser) (*
 		},
 	}
 
-	// Set the ownerRef for the Deployment
+	// Set the ownerRef for the Namespace for deletion of dependent
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(user, ns, r.Scheme); err != nil {
 		return nil, err
