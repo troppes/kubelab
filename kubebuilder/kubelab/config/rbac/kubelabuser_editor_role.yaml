@@ -1,20 +1,20 @@
-# permissions for end users to edit students.
+# permissions for end users to edit kubelabusers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: student-editor-role
+    app.kubernetes.io/instance: kubelabuser-editor-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: kubelab
     app.kubernetes.io/part-of: kubelab
     app.kubernetes.io/managed-by: kustomize
-  name: student-editor-role
+  name: kubelabuser-editor-role
 rules:
 - apiGroups:
   - kubelab.kubelab.local
   resources:
-  - students
+  - kubelabusers
   verbs:
   - create
   - delete
@@ -26,6 +26,6 @@ rules:
 - apiGroups:
   - kubelab.kubelab.local
   resources:
-  - students/status
+  - kubelabusers/status
   verbs:
   - get

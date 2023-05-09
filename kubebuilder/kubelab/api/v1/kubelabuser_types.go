@@ -22,42 +22,45 @@ import (
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// StudentSpec defines the desired state of Student
-type StudentSpec struct {
+// KubelabUserSpec defines the desired state of KubelabUser
+type KubelabUserSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Student. Edit student_types.go to remove/update
-	StudentId string `json:"studentid,omitempty"`
+	// Normally StudentID, otherwise TeacherID
+	Id        string `json:"id,omitempty"`
+	IsTeacher bool   `json:"teacher,omitempty"`
 }
 
-// StudentStatus defines the observed state of Student
-type StudentStatus struct {
+// KubelabUserStatus defines the observed state of KubelabUser
+type KubelabUserStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:scope=Cluster
 
-// Student is the Schema for the students API
-type Student struct {
+// KubelabUser is the Schema for the kubelabusers API
+type KubelabUser struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StudentSpec   `json:"spec,omitempty"`
-	Status StudentStatus `json:"status,omitempty"`
+	Spec   KubelabUserSpec   `json:"spec,omitempty"`
+	Status KubelabUserStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// StudentList contains a list of Student
-type StudentList struct {
+// KubelabUserList contains a list of KubelabUser
+type KubelabUserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Student `json:"items"`
+	Items           []KubelabUser `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Student{}, &StudentList{})
+	SchemeBuilder.Register(&KubelabUser{}, &KubelabUserList{})
 }

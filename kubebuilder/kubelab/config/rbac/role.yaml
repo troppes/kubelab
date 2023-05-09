@@ -1,0 +1,71 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - classrooms
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - classrooms/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - classrooms/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - kubelabusers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - kubelabusers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - kubelabusers/status
+  verbs:
+  - get
+  - patch
+  - update

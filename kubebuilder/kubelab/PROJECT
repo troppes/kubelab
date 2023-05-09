@@ -14,7 +14,7 @@ resources:
   controller: true
   domain: kubelab.local
   group: kubelab
-  kind: Student
+  kind: Classroom
   path: kubelab.local/kubelab/api/v1
   version: v1
 - api:
@@ -23,7 +23,7 @@ resources:
   controller: true
   domain: kubelab.local
   group: kubelab
-  kind: Classroom
+  kind: KubelabUser
   path: kubelab.local/kubelab/api/v1
   version: v1
 version: "3"

@@ -1,5 +1,5 @@
 ## Append samples of your project ##
 resources:
-- kubelab_v1_student.yaml
 - kubelab_v1_classroom.yaml
+- kubelab_v1_kubelabuser.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

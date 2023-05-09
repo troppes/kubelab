@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // ClassroomSpec defines the desired state of Classroom
@@ -28,8 +27,10 @@ type ClassroomSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Classroom. Edit classroom_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Teacher           KubelabUser   `json:"teacher,omitempty"`
+	Name              string        `json:"class_name,omitempty"`
+	EnrolledStudents  []KubelabUser `json:"enrolled_students,omitempty"`
+	TemplateContainer string        `json:"container,omitempty"`
 }
 
 // ClassroomStatus defines the observed state of Classroom

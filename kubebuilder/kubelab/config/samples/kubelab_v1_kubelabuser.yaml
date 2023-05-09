@@ -1,12 +1,13 @@
 apiVersion: kubelab.kubelab.local/v1
-kind: Student
+kind: KubelabUser
 metadata:
   labels:
-    app.kubernetes.io/name: student
-    app.kubernetes.io/instance: student-sample
+    app.kubernetes.io/name: kubelabuser
+    app.kubernetes.io/instance: kubelabuser-sample
     app.kubernetes.io/part-of: kubelab
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubelab
-  name: student-sample
+  name: kubelabuser-sample
 spec:
-  # TODO(user): Add fields here
+  id: "5996"
+

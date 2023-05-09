@@ -89,18 +89,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.StudentReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Student")
-		os.Exit(1)
-	}
 	if err = (&controller.ClassroomReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Classroom")
+		os.Exit(1)
+	}
+	if err = (&controller.KubelabUserReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KubelabUser")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
