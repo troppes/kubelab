@@ -1,0 +1,12 @@
+apiVersion: kubelab.kubelab.local/v1
+kind: Classroom
+metadata:
+  labels:
+    app.kubernetes.io/name: classroom
+    app.kubernetes.io/instance: classroom-sample
+    app.kubernetes.io/part-of: kubelab
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubelab
+  name: classroom-sample
+spec:
+  # TODO(user): Add fields here

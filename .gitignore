@@ -1,1 +1,3 @@
 tutorial/*
+kubebuilder/foo
+kubebuilder/cronjob

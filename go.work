@@ -1,0 +1,6 @@
+// Needs to be in root directory to support multi go project setups
+go 1.20
+
+use ./kubebuilder/cronjob
+use ./kubebuilder/foo
+use ./kubebuilder/kubelab

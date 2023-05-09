@@ -1,0 +1,27 @@
+# permissions for end users to view classrooms.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: classroom-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubelab
+    app.kubernetes.io/part-of: kubelab
+    app.kubernetes.io/managed-by: kustomize
+  name: classroom-viewer-role
+rules:
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - classrooms
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - classrooms/status
+  verbs:
+  - get

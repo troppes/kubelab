@@ -1,0 +1,27 @@
+# permissions for end users to view students.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: student-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubelab
+    app.kubernetes.io/part-of: kubelab
+    app.kubernetes.io/managed-by: kustomize
+  name: student-viewer-role
+rules:
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - students
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubelab.kubelab.local
+  resources:
+  - students/status
+  verbs:
+  - get
