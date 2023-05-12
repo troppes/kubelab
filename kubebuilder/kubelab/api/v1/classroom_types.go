@@ -24,23 +24,20 @@ import (
 
 // ClassroomSpec defines the desired state of Classroom
 type ClassroomSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	Teacher           KubelabUser   `json:"teacher,omitempty"`
-	Name              string        `json:"class_name,omitempty"`
-	EnrolledStudents  []KubelabUser `json:"enrolled_students,omitempty"`
-	TemplateContainer string        `json:"container,omitempty"`
+	Name              string        `json:"className,omitempty"`
+	EnrolledStudents  []KubelabUser `json:"enrolledStudents,omitempty"`
+	TemplateContainer string        `json:"templateContainer,omitempty"`
 }
 
 // ClassroomStatus defines the observed state of Classroom
 type ClassroomStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:scope=Cluster
 
 // Classroom is the Schema for the classrooms API
 type Classroom struct {

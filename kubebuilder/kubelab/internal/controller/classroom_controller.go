@@ -18,7 +18,11 @@ package controller
 
 import (
 	"context"
+	"errors"
 
+	v1apps "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,19 +41,75 @@ type ClassroomReconciler struct {
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=classrooms/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=classrooms/finalizers,verbs=update
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Classroom object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
-func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+//Custom RBAC for Namespace and Deploy
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers,verbs=get;list;watch
 
-	// TODO(user): your logic here
+func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
+
+	log.Info("Classroom Created!")
+
+	// Fetch the instance and check if it exist
+	user := &kubelabv1.Classroom{}
+	if err := r.Get(ctx, req.NamespacedName, user); err != nil {
+		if apierrors.IsNotFound(err) {
+			// If the custom resource is not found then, it usually means that it was deleted or not created
+			// In this way, we will stop the reconciliation
+			return ctrl.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		log.Error(err, "Failed to get Class")
+		return ctrl.Result{}, err
+	}
+
+	// Check validity of connected ressources
+	// only do for uncertain status?
+	teacher := user.Spec.Teacher
+	students := user.Spec.EnrolledStudents
+	if teacher.Spec.Id == "" {
+		err := errors.New("teacher not set")
+		log.Error(err, "Teacher is an empty string")
+		return ctrl.Result{}, err
+	} else {
+		kubelabuserList := &kubelabv1.KubelabUserList{}
+		teacherFound := false
+		r.Client.List(ctx, kubelabuserList)
+
+		// map the students to id for better deletion
+		studentMap := make(map[string]int)
+		for i := 0; i < len(students); i++ {
+			studentMap[students[i].Spec.Id] = 1
+		}
+
+		for _, user := range kubelabuserList.Items {
+			if user.Spec.Id == teacher.Spec.Id {
+				teacherFound = true
+			}
+			delete(studentMap, user.Spec.Id)
+		}
+
+		if !teacherFound {
+			log.Error(nil, "Teacher does not exist")
+			// TODO set requeue delay later
+			return ctrl.Result{}, errors.New("teacher does not exist")
+		}
+		if len(studentMap) > 0 {
+			log.Error(nil, "Not all students were found", "Students", studentMap)
+			return ctrl.Result{}, errors.New("students do not exist")
+		}
+	}
+
+	// create a NS for class and Mount
+
+	// deploy in students NS
+
+	// create Mount
+
+	// on deletetion cascade and delete NS per Finalizer
+
+	// Create Mount for Class and Mount (later)
 
 	return ctrl.Result{}, nil
 }
@@ -58,5 +118,8 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 func (r *ClassroomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kubelabv1.Classroom{}).
+		Owns(&kubelabv1.KubelabUser{}).
+		Owns(&v1apps.Deployment{}).
+		Owns(&v1.Namespace{}).
 		Complete(r)
 }

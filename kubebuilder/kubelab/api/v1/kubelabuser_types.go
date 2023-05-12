@@ -24,19 +24,15 @@ import (
 
 // KubelabUserSpec defines the desired state of KubelabUser
 type KubelabUserSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// Normally StudentID, otherwise TeacherID
 	Id        string `json:"id,omitempty"`
-	IsTeacher bool   `json:"teacher,omitempty"`
+	IsTeacher bool   `json:"isTeacher,omitempty"`
 }
 
 // KubelabUserStatus defines the observed state of KubelabUser
 type KubelabUserStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	MountName  string             `json:"mountName,omitempty"`
 }
 
 //+kubebuilder:object:root=true

@@ -62,11 +62,9 @@ const (
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	// Fetch the Memcached instance
-	// The purpose is check if the Custom Resource for the Kind Memcached
+	// Fetch the instance
 	// is applied on the cluster if not we return nil to stop the reconciliation
 	user := &kubelabv1.KubelabUser{}
-	log.Info(user.Spec.Id)
 	err := r.Get(ctx, req.NamespacedName, user)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -87,19 +85,14 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		// Let's re-fetch the memcached Custom Resource after update the status
-		// so that we have the latest state of the resource on the cluster and we will avoid
-		// raise the issue "the object has been modified, please apply
-		// your changes to the latest version and try again" which would re-trigger the reconciliation
-		// if we try to update it again in the following operations
+		// Let's re-fetch the Custom Resource after update the status to ensure latest state
 		if err := r.Get(ctx, req.NamespacedName, user); err != nil {
 			log.Error(err, "Failed to re-fetch user")
 			return ctrl.Result{}, err
 		}
 	}
 
-	// Let's add a finalizer. Then, we can define some operations which should
-	// occurs before the custom resource to be deleted.
+	// Finalizer to ensure deletion of NS
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers
 	if !controllerutil.ContainsFinalizer(user, userFinalizer) {
 		log.Info("Adding Finalizer to User")
@@ -144,9 +137,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				log.Info("Deleted Namespace", "Namespace Name", namespaceName)
 			}
 
-			// Re-fetch so that we have the latest state of the resource on the cluster and we will avoid
-			// raise the issue "the object has been modified, please apply
-			// your changes to the latest version and try again" which would re-trigger the reconciliation
+			// Re-fetch the Custom Resource after update the status to ensure latest state
 			if err := r.Get(ctx, req.NamespacedName, user); err != nil {
 				log.Error(err, "Failed to re-fetch user")
 				return ctrl.Result{}, err
@@ -175,11 +166,11 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	// Check if the deployment already exists, if not create a new one
+	// Check if the NS already exists, if not create a new one
 	ns := &v1.Namespace{}
 	err = r.Get(ctx, client.ObjectKey{Name: user.Spec.Id}, ns)
 	if err != nil && apierrors.IsNotFound(err) {
-		// Define a new deployment
+		// Define a new NS
 		ns, err := r.namespaceForUser(user)
 
 		if err != nil {
@@ -211,7 +202,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Namespace")
-		// Let's return the error for the reconciliation be re-trigged again
+		// Return the error for the reconciliation be re-trigged again
 		return ctrl.Result{}, err
 	}
 
@@ -228,7 +219,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return ctrl.Result{}, nil
 }
 
-// deploymentForMemcached returns a Memcached Deployment object
+// namespaceForUser returns a namespace for the Kubelabuser
 func (r *KubelabUserReconciler) namespaceForUser(user *kubelabv1.KubelabUser) (*v1.Namespace, error) {
 	ls := labelsForUser(user.Spec.Id)
 
@@ -239,7 +230,7 @@ func (r *KubelabUserReconciler) namespaceForUser(user *kubelabv1.KubelabUser) (*
 		},
 	}
 
-	// Set the ownerRef for the Namespace for deletion of dependent
+	// Set the ownerRef for the Namespace for deletion of dependent, which does not seem to work with NS
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(user, ns, r.Scheme); err != nil {
 		return nil, err
@@ -247,8 +238,7 @@ func (r *KubelabUserReconciler) namespaceForUser(user *kubelabv1.KubelabUser) (*
 	return ns, nil
 }
 
-// labelsForMemcached returns the labels for selecting the resources
-// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
+// labelsForUser returns the labels for selecting the resources
 func labelsForUser(name string) map[string]string {
 
 	return map[string]string{
