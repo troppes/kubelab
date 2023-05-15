@@ -25,7 +25,7 @@ import (
 // ClassroomSpec defines the desired state of Classroom
 type ClassroomSpec struct {
 	Teacher           KubelabUser   `json:"teacher,omitempty"`
-	Name              string        `json:"className,omitempty"`
+	Namespace         string        `json:"namespace,omitempty"`
 	EnrolledStudents  []KubelabUser `json:"enrolledStudents,omitempty"`
 	TemplateContainer string        `json:"templateContainer,omitempty"`
 }

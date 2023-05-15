@@ -35,8 +35,6 @@ spec:
           spec:
             description: ClassroomSpec defines the desired state of Classroom
             properties:
-              className:
-                type: string
               enrolledStudents:
                 items:
                   description: KubelabUser is the Schema for the kubelabusers API
@@ -149,6 +147,8 @@ spec:
                       type: object
                   type: object
                 type: array
+              namespace:
+                type: string
               teacher:
                 description: KubelabUser is the Schema for the kubelabusers API
                 properties:
