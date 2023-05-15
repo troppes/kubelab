@@ -42,12 +42,6 @@ type KubelabUserReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// Definitions to manage status conditions
-const (
-	typeAvailableUser = "Available"
-	typeDegradedUser  = "Degraded"
-)
-
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers/finalizers,verbs=update
@@ -79,7 +73,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// Let's just set the status as Unknown when no status are available
 	if user.Status.Conditions == nil || len(user.Status.Conditions) == 0 {
-		meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailableUser, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
+		meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
 		if err = r.Status().Update(ctx, user); err != nil {
 			log.Error(err, "Failed to update User status")
 			return ctrl.Result{}, err
@@ -115,7 +109,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			log.Info("Performing Finalizer Operations for User before delete CR")
 
 			// Let's add here an status "Degraded" to define that this resource begin its process to be terminated.
-			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeDegradedUser,
+			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionUnknown, Reason: "Finalizing",
 				Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", user.Name)})
 
@@ -143,7 +137,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				return ctrl.Result{}, err
 			}
 
-			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeDegradedUser,
+			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionTrue, Reason: "Finalizing",
 				Message: fmt.Sprintf("Finalizer operations for custom resource %s name were successfully accomplished", user.Name)})
 
@@ -177,7 +171,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			log.Error(err, "Failed to define new NS resource for user")
 
 			// The following implementation will update the status
-			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailableUser,
+			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 				Status: metav1.ConditionFalse, Reason: "Reconciling",
 				Message: fmt.Sprintf("Failed to create Deployment for the custom resource (%s): (%s)", user.Spec.Id, err)})
 
@@ -207,7 +201,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	// The following implementation will update the status
-	meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailableUser,
+	meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
 		Message: fmt.Sprintf("Namespace for custom resource (%s) created successfully", user.Spec.Id)})
 

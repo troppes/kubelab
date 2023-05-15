@@ -73,7 +73,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Let's just set the status as Unknown when no status are available
 	if classroom.Status.Conditions == nil || len(classroom.Status.Conditions) == 0 {
-		meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailableUser, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
+		meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
 		if err := r.Status().Update(ctx, classroom); err != nil {
 			log.Error(err, "Failed to update classroom status")
 			return ctrl.Result{}, err
@@ -109,7 +109,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			log.Info("Performing Finalizer Operations for classroom before delete CR")
 
 			// Let's add here an status "Degraded" to define that this resource begin its process to be terminated.
-			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegradedUser,
+			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionUnknown, Reason: "Finalizing",
 				Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", classroom.Name)})
 
@@ -143,7 +143,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 
-			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegradedUser,
+			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionTrue, Reason: "Finalizing",
 				Message: fmt.Sprintf("Finalizer operations for custom resource %s name were successfully accomplished", classroom.Name)})
 
@@ -215,7 +215,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			log.Error(err, "Failed to define new NS resource for classroom")
 
 			// The following implementation will update the status
-			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailableUser,
+			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
 				Status: metav1.ConditionFalse, Reason: "Reconciling",
 				Message: fmt.Sprintf("Failed to create NS for the custom resource (%s): (%s)", classroom.Name, err)})
 
@@ -257,7 +257,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				log.Error(err, "Failed to define new Deployment resource for Classroom")
 
 				// The following implementation will update the status
-				meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailableUser,
+				meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
 					Status: metav1.ConditionFalse, Reason: "Reconciling",
 					Message: fmt.Sprintf("Failed to create Deployment for the custom resource (%s): (%s)", classroom.Name, err)})
 
@@ -301,7 +301,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				}
 
 				// The following implementation will update the status
-				meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegradedUser,
+				meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegraded,
 					Status: metav1.ConditionFalse, Reason: "Changing Image",
 					Message: fmt.Sprintf("Failed to update the image for the custom resource (%s): (%s)", classroom.Name, err)})
 
@@ -342,7 +342,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Create Mount for Class (later)
 
 	// The following implementation will update the status
-	meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailableUser,
+	meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
 		Message: fmt.Sprintf("Namespace and deployment for custom resource (%s) created successfully", classroom.Name)})
 

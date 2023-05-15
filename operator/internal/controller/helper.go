@@ -5,6 +5,12 @@ import (
 	kubelabv1 "kubelab.local/kubelab/api/v1"
 )
 
+// Definitions to manage status conditions
+const (
+	typeAvailable = "Available"
+	typeDegraded  = "Degraded"
+)
+
 func isInClass(students []kubelabv1.KubelabUser, deployment v1apps.Deployment) bool {
 	for _, student := range students {
 		if student.Spec.Id == deployment.Namespace {
