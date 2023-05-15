@@ -39,6 +39,7 @@ import (
 
 const classroomFinalizer = "classroom.kubelab.local/finalizer"
 const classroomOwnerKey = ".metadata.controller"
+const userOwnerKey = ".spec.id"
 
 // ClassroomReconciler reconciles a Classroom object
 type ClassroomReconciler struct {
@@ -167,7 +168,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Check validity of connected ressources
-	// only do for uncertain status?
 	teacher := classroom.Spec.Teacher
 	students := classroom.Spec.EnrolledStudents
 	if teacher.Spec.Id == "" {
@@ -176,31 +176,18 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	} else {
 		kubelabUserList := &kubelabv1.KubelabUserList{}
-		teacherFound := false
 		r.Client.List(ctx, kubelabUserList)
 
-		// map the students to id for better deletion
-		studentMap := make(map[string]bool)
 		for i := 0; i < len(students); i++ {
-			studentMap[students[i].Spec.Id] = false
-		}
-
-		for _, user := range kubelabUserList.Items {
-			if user.Spec.Id == teacher.Spec.Id {
-				teacherFound = true
+			if err := r.List(ctx, kubelabUserList, client.MatchingFields{userOwnerKey: students[i].Spec.Id}); err != nil || len(kubelabUserList.Items) == 0 {
+				return ctrl.Result{}, errors.New("student does not exist: " + students[i].Spec.Id)
 			}
-			delete(studentMap, user.Spec.Id)
 		}
 
-		if !teacherFound {
-			log.Error(nil, "Teacher does not exist")
-			// TODO set requeue delay later
-			return ctrl.Result{}, errors.New("teacher does not exist")
-		}
-		// TODO CREATE STUDENT IF NOT EXISTS?
-		if len(studentMap) > 0 {
-			log.Error(nil, "Not all students were found", "Students", studentMap)
-			return ctrl.Result{}, errors.New("students do not exist")
+		if err := r.List(ctx, kubelabUserList, client.MatchingFields{userOwnerKey: teacher.Spec.Id}); err != nil || len(kubelabUserList.Items) == 0 {
+			return ctrl.Result{}, errors.New("teacher does not exist: " + teacher.Spec.Id)
+		} else if !kubelabUserList.Items[0].Spec.IsTeacher {
+			return ctrl.Result{}, errors.New("user is not a teacher: " + teacher.Spec.Id)
 		}
 	}
 
@@ -321,7 +308,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// delete if student is removed
-	// IDEA: Check against list if currently owned deployments are the same, if not delete
 	deploymentList := &v1apps.DeploymentList{}
 	if err := r.List(ctx, deploymentList, client.MatchingFields{classroomOwnerKey: req.Name}); err != nil {
 		log.Error(err, "unable to list all child deployments")
@@ -486,7 +472,6 @@ func (r *ClassroomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// Setup Indexer for quicker lookup of the jobs
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1apps.Deployment{}, classroomOwnerKey, func(rawObj client.Object) []string {
-		// grab the job object, extract the owner...
 		deploy := rawObj.(*v1apps.Deployment)
 		owner := metav1.GetControllerOf(deploy)
 		if owner == nil {
@@ -495,6 +480,13 @@ func (r *ClassroomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 		// and return it
 		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &kubelabv1.KubelabUser{}, userOwnerKey, func(rawObj client.Object) []string {
+		user := rawObj.(*kubelabv1.KubelabUser)
+		return []string{user.Spec.Id}
 	}); err != nil {
 		return err
 	}
