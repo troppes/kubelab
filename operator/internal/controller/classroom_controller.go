@@ -38,7 +38,7 @@ import (
 )
 
 const classroomFinalizer = "classroom.kubelab.local/finalizer"
-const classroomOwnerKey = ".metadata.controller"
+const classroomOwnerKey = ".metadata.namespace"
 const userOwnerKey = ".spec.id"
 
 // ClassroomReconciler reconciles a Classroom object
@@ -309,7 +309,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// delete if student is removed
 	deploymentList := &v1apps.DeploymentList{}
-	if err := r.List(ctx, deploymentList, client.MatchingFields{classroomOwnerKey: req.Name}); err != nil {
+	if err := r.List(ctx, deploymentList, client.MatchingFields{classroomOwnerKey: classroom.Spec.Namespace}); err != nil {
 		log.Error(err, "unable to list all child deployments")
 		return ctrl.Result{}, err
 	} else {
@@ -470,16 +470,9 @@ func labelsForClassroom(name string) map[string]string {
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClassroomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	// Setup Indexer for quicker lookup of the jobs
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1apps.Deployment{}, classroomOwnerKey, func(rawObj client.Object) []string {
 		deploy := rawObj.(*v1apps.Deployment)
-		owner := metav1.GetControllerOf(deploy)
-		if owner == nil {
-			return nil
-		}
-
-		// and return it
-		return []string{owner.Name}
+		return []string{deploy.Name}
 	}); err != nil {
 		return err
 	}
