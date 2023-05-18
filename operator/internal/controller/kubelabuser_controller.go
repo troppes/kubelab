@@ -49,21 +49,14 @@ type KubelabUserReconciler struct {
 // RBAC group to create and delete namespaces
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	// Fetch the instance
-	// is applied on the cluster if not we return nil to stop the reconciliation
 	user := &kubelabv1.KubelabUser{}
 	err := r.Get(ctx, req.NamespacedName, user)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// If the custom resource is not found then, it usually means that it was deleted or not created
-			// In this way, we will stop the reconciliation
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -71,7 +64,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	// Let's just set the status as Unknown when no status are available
+	// set the status as Unknown when no status are available
 	if user.Status.Conditions == nil || len(user.Status.Conditions) == 0 {
 		meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
 		if err = r.Status().Update(ctx, user); err != nil {
@@ -79,7 +72,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		// Let's re-fetch the Custom Resource after update the status to ensure latest state
+		// re-fetch the Custom Resource after update the status to ensure latest state
 		if err := r.Get(ctx, req.NamespacedName, user); err != nil {
 			log.Error(err, "Failed to re-fetch user")
 			return ctrl.Result{}, err

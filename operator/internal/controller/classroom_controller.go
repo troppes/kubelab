@@ -72,7 +72,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	// Let's just set the status as Unknown when no status are available
+	// set the status as Unknown when no status are available
 	if classroom.Status.Conditions == nil || len(classroom.Status.Conditions) == 0 {
 		meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
 		if err := r.Status().Update(ctx, classroom); err != nil {
@@ -80,7 +80,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, err
 		}
 
-		// Let's re-fetch the Custom Resource after update the status to ensure latest state
 		if err := r.Get(ctx, req.NamespacedName, classroom); err != nil {
 			log.Error(err, "Failed to re-fetch classroom")
 			return ctrl.Result{}, err
@@ -102,14 +101,12 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	// Check if the User instance is marked to be deleted, which is
-	// indicated by the deletion timestamp being set.
+	// Check if the User instance is marked to be deleted
 	isClassroomMarkedToBeDeleted := classroom.GetDeletionTimestamp() != nil
 	if isClassroomMarkedToBeDeleted {
 		if controllerutil.ContainsFinalizer(classroom, classroomFinalizer) {
 			log.Info("Performing Finalizer Operations for classroom before delete CR")
 
-			// Let's add here an status "Degraded" to define that this resource begin its process to be terminated.
 			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionUnknown, Reason: "Finalizing",
 				Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", classroom.Name)})
@@ -119,7 +116,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 
-			// Re-fetch the Custom Resource after update the status to ensure latest state
 			if err := r.Get(ctx, req.NamespacedName, classroom); err != nil {
 				log.Error(err, "Failed to re-fetch classroom")
 				return ctrl.Result{}, err
@@ -235,7 +231,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	for _, student := range students {
 		// Check if the deployment already exists, if not create a new one
 		found := &v1apps.Deployment{}
-		err := r.Get(ctx, types.NamespacedName{Name: classroom.Name, Namespace: student.Spec.Id}, found)
+		err := r.Get(ctx, types.NamespacedName{Name: classroom.Spec.Namespace, Namespace: student.Spec.Id}, found)
 		if err != nil && apierrors.IsNotFound(err) {
 			// Define a new deployment
 			dep, err := r.deploymentForClassroom(classroom, &student)
@@ -361,7 +357,7 @@ func (r *ClassroomReconciler) namespaceForClass(classroom *kubelabv1.Classroom) 
 
 // deploymentForClassroom returns a Deployment object.
 func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classroom, student *kubelabv1.KubelabUser) (*v1apps.Deployment, error) {
-	ls := labelsForClassroom(classroom.Name)
+	ls := labelsForClassroom(classroom.Spec.Namespace)
 	replicas := int32(1)
 
 	deployment := &v1apps.Deployment{
