@@ -4,7 +4,27 @@ import { env } from '$env/dynamic/private'
 export const load = async (event) => {
 
     let session = await event.locals.getSession();
+    if (session && session.user) {
+        let kc = getKubeConfig(session.user.id_token);
+        let k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+        let answer = '';
+        await k8sApi
+            .listNamespacedPod('default')
+            .then((res) => {
+                answer = res.body;
+            })
+            .catch((err) => {
+                answer = err.body;
+            });
+        return {
+            apiAnswer: JSON.stringify(answer)
+        }
+    }
 
+}
+
+// getApiClient returns a k8s api client
+const getKubeConfig = (idToken) => {
     const cluster = {
         name: 'kubelab-cluster',
         server: env.KUBERNETES_SERVER_URL,
@@ -13,7 +33,7 @@ export const load = async (event) => {
 
     const user = {
         name: 'user',
-        token: session.user.id_token,
+        token: idToken,
     };
 
     const context = {
@@ -31,17 +51,5 @@ export const load = async (event) => {
         currentContext: context.name
     });
 
-    const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-    let answer = '';
-    await k8sApi
-        .listNamespacedPod('default')
-        .then((res) => {
-            answer = res.body;
-        })
-        .catch((err) => {
-            answer = err.body;
-        });
-    return {
-        apiAnswer: JSON.stringify(answer)
-    }
+    return kc;
 }
