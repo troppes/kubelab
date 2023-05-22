@@ -19,12 +19,5 @@
       "cwd": "${workspaceFolder}/frontend",
       "type": "node-terminal"
     },
-    {
-      "command": "npm run dev",
-      "name": "Run npm run dev",
-      "request": "launch",
-      "type": "node-terminal",
-      "cwd": "${workspaceFolder}/frontend"
-    },
   ]
 }
