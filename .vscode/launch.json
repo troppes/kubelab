@@ -1,16 +1,30 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Kubelab Operator",
-        "type": "go",
-        "request": "launch",
-        "mode": "auto",
-        "program": "${workspaceFolder}/operator/cmd/main.go",
-        "env": {
-          "WATCH_NAMESPACE": "kubelab.local/kubelab"
-        },
-        "args": []
-      }
-    ]
-  }
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Kubelab Operator",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/operator/cmd/main.go",
+      "env": {
+        "WATCH_NAMESPACE": "kubelab.local/kubelab"
+      },
+      "args": []
+    },
+    {
+      "command": "npm run debug",
+      "name": "Kubelab Frontend Debug",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "type": "node-terminal"
+    },
+    {
+      "command": "npm run dev",
+      "name": "Run npm run dev",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+  ]
+}

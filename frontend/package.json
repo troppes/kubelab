@@ -3,15 +3,17 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "vite dev --port 3000",
 		"build": "vite build",
 		"preview": "vite preview",
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
-		"format": "prettier --plugin-search-dir . --write ."
+		"format": "prettier --plugin-search-dir . --write .",
+		"debug": " vavite-loader vite dev --port 3000"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/kit": "^1.5.0",
+		"@vavite/node-loader": "^1.8.0",
 		"eslint": "^8.28.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-svelte": "^2.26.0",
@@ -23,6 +25,7 @@
 	"type": "module",
 	"dependencies": {
 		"@auth/core": "^0.7.1",
-		"@auth/sveltekit": "^0.3.1"
+		"@auth/sveltekit": "^0.3.1",
+		"@kubernetes/client-node": "^0.18.1"
 	}
 }
