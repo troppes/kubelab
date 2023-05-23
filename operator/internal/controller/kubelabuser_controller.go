@@ -22,10 +22,12 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	v1rbac "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -35,6 +37,9 @@ import (
 )
 
 const userFinalizer = "kubeuser.kubelab.local/finalizer"
+const roleBindingName = "user-rolebinding"
+const roleName = "user-role"
+const groupPrefix = "keycloak:"
 
 // KubelabUserReconciler reconciles a KubelabUser object
 type KubelabUserReconciler struct {
@@ -153,7 +158,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	// Check if the NS already exists, if not create a new one
+	// Check if the NS already exists, if not create a new one and assign role
 	ns := &v1.Namespace{}
 	err = r.Get(ctx, client.ObjectKey{Name: user.Spec.Id}, ns)
 	if err != nil && apierrors.IsNotFound(err) {
@@ -166,7 +171,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			// The following implementation will update the status
 			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 				Status: metav1.ConditionFalse, Reason: "Reconciling",
-				Message: fmt.Sprintf("Failed to create Deployment for the custom resource (%s): (%s)", user.Spec.Id, err)})
+				Message: fmt.Sprintf("Failed to create NS for the custom resource (%s): (%s)", user.Spec.Id, err)})
 
 			if err := r.Status().Update(ctx, user); err != nil {
 				log.Error(err, "Failed to update user status")
@@ -189,6 +194,79 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Namespace")
+		// Return the error for the reconciliation be re-trigged again
+		return ctrl.Result{}, err
+	}
+
+	// Check if the Role already exists, if not create a new one and add rolebinding
+	role := &v1rbac.Role{}
+	err = r.Get(ctx, types.NamespacedName{Name: roleName, Namespace: user.Spec.Id}, role)
+	if err != nil && apierrors.IsNotFound(err) {
+		// Define a new Role
+		role, err := r.roleForUser(user)
+
+		if err != nil {
+			log.Error(err, "Failed to define new Role resource for user")
+
+			// The following implementation will update the status
+			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
+				Status: metav1.ConditionFalse, Reason: "Reconciling",
+				Message: fmt.Sprintf("Failed to create Role for the custom resource (%s): (%s)", user.Spec.Id, err)})
+
+			if err := r.Status().Update(ctx, user); err != nil {
+				log.Error(err, "Failed to update user status")
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("Creating new Role")
+
+		if err = r.Create(ctx, role); err != nil {
+			log.Error(err, "Failed to create new Role")
+			return ctrl.Result{}, err
+		}
+		// Requeue after 10 seconds to create Rolebinding
+		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get Role")
+		// Return the error for the reconciliation be re-trigged again
+		return ctrl.Result{}, err
+	}
+
+	// Check if the Role already exists, if not create a new one and add rolebinding
+	roleBinding := &v1rbac.RoleBinding{}
+	err = r.Get(ctx, types.NamespacedName{Name: roleBindingName, Namespace: user.Spec.Id}, roleBinding)
+	if err != nil && apierrors.IsNotFound(err) {
+		// Define a new Role
+		roleBinding, err := r.rolebindingForUser(user)
+
+		if err != nil {
+			log.Error(err, "Failed to define new Rolebinding resource for user")
+
+			// The following implementation will update the status
+			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
+				Status: metav1.ConditionFalse, Reason: "Reconciling",
+				Message: fmt.Sprintf("Failed to create Rolebinding for the custom resource (%s): (%s)", user.Spec.Id, err)})
+
+			if err := r.Status().Update(ctx, user); err != nil {
+				log.Error(err, "Failed to update user status")
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("Creating new Rolebinding")
+
+		if err = r.Create(ctx, roleBinding); err != nil {
+			log.Error(err, "Failed to create new Rolebinding")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get Rolebinding")
 		// Return the error for the reconciliation be re-trigged again
 		return ctrl.Result{}, err
 	}
@@ -223,6 +301,65 @@ func (r *KubelabUserReconciler) namespaceForUser(user *kubelabv1.KubelabUser) (*
 		return nil, err
 	}
 	return ns, nil
+}
+
+// roleForUser returns role to scale and get ressources inside the namespace.
+func (r *KubelabUserReconciler) roleForUser(user *kubelabv1.KubelabUser) (*v1rbac.Role, error) {
+
+	// Define the Role object
+	role := &v1rbac.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleName, // static names can be used here, since the namespace is unique
+			Namespace: user.Spec.Id,
+		},
+		Rules: []v1rbac.PolicyRule{
+			{
+				APIGroups: []string{"apps"},
+				Resources: []string{"deployments"},
+				Verbs:     []string{"list", "scale"},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{"pods"},
+				Verbs:     []string{"get"},
+			},
+		},
+	}
+
+	if err := ctrl.SetControllerReference(user, role, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return role, nil
+}
+
+// rolebindingForUser returns rolebinding to scale all ressources inside the namespace.
+func (r *KubelabUserReconciler) rolebindingForUser(user *kubelabv1.KubelabUser) (*v1rbac.RoleBinding, error) {
+
+	rb := &v1rbac.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleBindingName,
+			Namespace: user.Spec.Id,
+		},
+		Subjects: []v1rbac.Subject{
+			{
+				Kind:      "Group",
+				Name:      groupPrefix + user.Spec.Id,
+				Namespace: user.Spec.Id,
+			},
+		},
+		RoleRef: v1rbac.RoleRef{
+			Kind:     "Role",
+			Name:     roleName,
+			APIGroup: "rbac.authorization.k8s.io",
+		},
+	}
+
+	if err := ctrl.SetControllerReference(user, rb, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return rb, nil
 }
 
 // labelsForUser returns the labels for selecting the resources
