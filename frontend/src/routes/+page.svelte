@@ -1,8 +1,24 @@
 <script>
 	import { page } from '$app/stores';
-	if ($page.data.apiAnswer) {
-		let result = JSON.parse($page.data.apiAnswer);
+	import { onMount } from 'svelte';
+	import { getDeployments } from '$lib/kubelab-requests.js';
+	import { scaleDeployment } from '../lib/kubelab-requests';
+
+	let token = null;
+	let deployments = { items: [] };
+	if ($page.data.session) {
+		token = $page.data.session.user.id_token;
 	}
+
+	const scaleHandler = async (e) => {
+		try {
+			// TODO
+			await scaleDeployment(token, e.srcElement.dataset.id);
+			deployments = getDeployments(token); // pull updated list
+		} catch (error) {
+			console.log(error);
+		}
+	};
 </script>
 
 {#if $page.data.session}
@@ -10,6 +26,47 @@
 		<div class="item">
 			<h1>Welcome to Kubelab</h1>
 			<p>Your Roles are: {$page.data.session?.user?.roles}</p>
+			{#await getDeployments(token)}
+				<div>
+					<p>Fetching Classrooms ...</p>
+				</div>
+			{:then deployments}
+				<div>
+					<div>
+						<table>
+							<thead>
+								<tr>
+									<th>Name</th>
+									<th>Status</th>
+									<th>Action</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each deployments.items as deploy}
+									<tr>
+										<td>
+											{deploy.metadata.name}
+										</td>
+										<td>
+											{deploy.status.availableReplicas == 1 ? 'On' : 'Off'}
+										</td>
+										<td>
+											<button class="button" data-id={deploy.metadata.name} on:click={scaleHandler}
+												>Stop</button
+											>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			{:catch error}
+				<div>
+					<p style="color: red">Error loading deployments.</p>
+					<p style="color: red">Error message: {error.body.message}</p>
+				</div>
+			{/await}
 			<p>This is a protected content. You can access this content because you are signed in.</p>
 			<p>Session expiry: {$page.data.session?.expires}</p>
 		</div>
