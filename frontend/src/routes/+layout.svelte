@@ -10,7 +10,7 @@
 					<small>Signed in as</small><br />
 					<strong>{$page.data.session.user?.email ?? $page.data.session.user?.name}</strong>
 				</div>
-				<div class="item"><div class="headline">Kubelab</div></div>
+				<div class="item"><div class="headline hidden-mobile">Kubelab</div></div>
 				<div class="item">
 					<a href="/auth/signout" class="button" data-sveltekit-preload-data="off">Sign out</a>
 				</div>

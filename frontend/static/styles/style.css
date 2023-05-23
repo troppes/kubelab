@@ -32,6 +32,16 @@ body {
     ;
 }
 
+@media (max-width: 1024px) {
+    .hidden-mobile {
+        display: none;
+    }
+
+    .container-nav {
+        flex-direction: column;
+    }
+}
+
 .headline {
     font-size: 1.5rem;
     font-weight: 600;
