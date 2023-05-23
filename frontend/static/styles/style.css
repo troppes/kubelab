@@ -28,8 +28,8 @@ body {
     background-color: var(--main-bg-color);
     transition: all 0.2s ease-in;
     border-radius: 16px;
+    max-height: 70px;
     color: var(--secondary-text-color);
-    ;
 }
 
 @media (max-width: 1024px) {
@@ -40,6 +40,11 @@ body {
     .container-nav {
         flex-direction: column;
     }
+}
+
+.logo {
+    filter: brightness(0) saturate(100%) invert(47%) sepia(63%) saturate(426%) hue-rotate(318deg) brightness(113%) contrast(83%);
+    max-width: 200px;
 }
 
 .headline {
