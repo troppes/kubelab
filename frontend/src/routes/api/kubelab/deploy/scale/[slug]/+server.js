@@ -3,9 +3,9 @@ import { env } from '$env/dynamic/private';
 import { json } from '@sveltejs/kit';
 import { decode, getKubeConfig } from '$lib/helpers.js';
 
-export async function POST({ request }) {
-    let deploy = await request.json();
+export async function GET({ request, params }) {
     let id_token = request.headers.get('Authorization');
+    let deployName = params.slug;
     let user_id = '';
     try {
         user_id = decode(id_token).preferred_username;
@@ -17,13 +17,13 @@ export async function POST({ request }) {
     if (id_token) {
         let kc = getKubeConfig(id_token, env.KUBERNETES_SERVER_URL, env.KUBERNETES_CA_Path);
         let k8sApi = kc.makeApiClient(k8s.AppsV1Api);
-        let deployDetail = await k8sApi.readNamespacedDeployment(deploy.name, user_id);
+        let deployDetail = await k8sApi.readNamespacedDeployment(deployName, user_id);
 
         // Switch off or on depending on state
         deployDetail.body.spec.replicas = deployDetail.body.spec.replicas === 0 ? 1 : 0;
 
         try {
-            const res = await k8sApi.replaceNamespacedDeployment(deploy.name, user_id, deployDetail.body);
+            const res = await k8sApi.replaceNamespacedDeployment(deployName, user_id, deployDetail.body);
             response = new Response(JSON.stringify(null), { status: 200, statusText: 'Success' });
 
         } catch (err) {

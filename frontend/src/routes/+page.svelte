@@ -1,14 +1,21 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { getDeployments } from '$lib/kubelab-requests.js';
-	import { scaleDeployment } from '../lib/kubelab-requests';
+	import { getDeployments, scaleDeployment, getConnectionString } from '$lib/kubelab-requests.js';
 
 	let token = null;
 	let deployments = { items: [] };
+
 	if ($page.data.session) {
 		token = $page.data.session.user.id_token;
 	}
+
+	const copy = () => {
+		navigator.clipboard.writeText(text).then(
+			() => dispatch('copy', text),
+			(e) => dispatch('fail')
+		);
+	};
 
 	// write onmount to fetch deployments
 	onMount(async () => {
@@ -25,6 +32,18 @@
 			deployments = await getDeployments(token); // pull updated list
 		} catch (error) {
 			deployments = error;
+		}
+	};
+
+	const connectionHandler = async (e) => {
+		try {
+			let string = await getConnectionString(token, e.srcElement.dataset.id);
+			navigator.clipboard
+				.writeText(string)
+				.then(() => console.log('Copied'))
+				.catch((e) => console.log(e));
+		} catch (error) {
+			console.log(error);
 		}
 	};
 </script>
@@ -47,6 +66,7 @@
 									<th>Name</th>
 									<th>Status</th>
 									<th>Action</th>
+									<th>Connection</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -63,6 +83,16 @@
 												>{deploy.status.replicas == 1 ? 'Stop' : 'Start'}</button
 											>
 										</td>
+										<td>
+											<button
+												class="button"
+												data-id={deploy.metadata.name}
+												on:click={connectionHandler}>Connect</button
+											>
+										</td>
+									</tr>
+									<tr class="details" data-id={deploy.metadata.name}>
+										<td colspan="4"> {JSON.stringify(deploy.metadata)} </td>
 									</tr>
 								{/each}
 							</tbody>
@@ -86,3 +116,9 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.details {
+		display: none;
+	}
+</style>
