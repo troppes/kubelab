@@ -188,7 +188,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// create a NS for class and Mount
-	// Check if the NS already exists, if not create a new one
 	ns := &v1.Namespace{}
 	if err := r.Get(ctx, client.ObjectKey{Name: classroom.Spec.Namespace}, ns); err != nil && apierrors.IsNotFound(err) {
 		// Define a new NS
@@ -217,9 +216,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, err
 		}
 
-		// Namespace created successfully
-		// We will requeue the reconciliation so that we can ensure the state
-		// and move forward for the next operations
+		// requeue the reconciliation so that we can ensure the state
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Namespace")
@@ -227,11 +224,11 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	// Create Deployments for all students, if not already existing
+	// Do operations for all students
 	for _, student := range students {
 		// Check if the deployment already exists, if not create a new one
-		found := &v1apps.Deployment{}
-		err := r.Get(ctx, types.NamespacedName{Name: classroom.Spec.Namespace, Namespace: student.Spec.Id}, found)
+		deployment := &v1apps.Deployment{}
+		err := r.Get(ctx, types.NamespacedName{Name: classroom.Spec.Namespace, Namespace: student.Spec.Id}, deployment)
 		if err != nil && apierrors.IsNotFound(err) {
 			// Define a new deployment
 			dep, err := r.deploymentForClassroom(classroom, &student)
@@ -260,22 +257,20 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 
-			// Deployment created successfully
 			// Reque to check if everything is alright
-			return ctrl.Result{RequeueAfter: time.Minute}, nil
+			return ctrl.Result{RequeueAfter: time.Second * 10}, nil
 		} else if err != nil {
 			log.Error(err, "Failed to get Deployment")
-			// Let's return the error for the reconciliation be re-trigged again
 			return ctrl.Result{}, err
 		}
 
 		// If the image gets changed in the CRD all deployments need to exchange theirs as well
 		image := classroom.Spec.TemplateContainer
 		// important: the call only works on the first image, so multiple images are currently not supported
-		if found.Spec.Template.Spec.Containers[0].Image != image {
-			found.Spec.Template.Spec.Containers[0].Image = image
-			if err = r.Update(ctx, found); err != nil {
-				log.Error(err, "Failed to update Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+		if deployment.Spec.Template.Spec.Containers[0].Image != image {
+			deployment.Spec.Template.Spec.Containers[0].Image = image
+			if err = r.Update(ctx, deployment); err != nil {
+				log.Error(err, "Failed to update Deployment", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
 
 				// Re-fetch to ensure state
 				if err := r.Get(ctx, req.NamespacedName, classroom); err != nil {
@@ -297,10 +292,47 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			}
 
 			// Now, that we update the image we want to requeue the reconciliation
-			// so that we can ensure that we have the latest state of the resource before
-			// update. Also, it will help ensure the desired state on the cluster
 			return ctrl.Result{Requeue: true}, nil
 		}
+
+		// Check if the deployment already exists, if not create a new one
+		service := &v1.Service{}
+		err = r.Get(ctx, types.NamespacedName{Name: classroom.Spec.Namespace, Namespace: student.Spec.Id}, service)
+		if err != nil && apierrors.IsNotFound(err) {
+			// Define a new deployment
+			svc, err := r.serviceForClassroom(classroom, &student)
+			// If failing write Error inside Status
+			if err != nil {
+				log.Error(err, "Failed to define new SVC resource for Classroom")
+
+				// The following implementation will update the status
+				meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
+					Status: metav1.ConditionFalse, Reason: "Reconciling",
+					Message: fmt.Sprintf("Failed to create SVC for the custom resource (%s): (%s)", classroom.Name, err)})
+
+				if err := r.Status().Update(ctx, classroom); err != nil {
+					log.Error(err, "Failed to update status")
+					return ctrl.Result{}, err
+				}
+
+				return ctrl.Result{}, err
+			}
+
+			log.Info("Creating a new Service",
+				"Service.Namespace", svc.Namespace, "SVC.Name", svc.Name)
+			if err = r.Create(ctx, svc); err != nil {
+				log.Error(err, "Failed to create new Deployment",
+					"Deployment.Namespace", svc.Namespace, "SVC.Name", svc.Name)
+				return ctrl.Result{}, err
+			}
+
+			// Reque to check if everything is alright
+			return ctrl.Result{RequeueAfter: time.Second * 10}, nil
+		} else if err != nil {
+			log.Error(err, "Failed to get SVC")
+			return ctrl.Result{}, err
+		}
+
 	}
 
 	// delete if student is removed
@@ -326,7 +358,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// The following implementation will update the status
 	meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
-		Message: fmt.Sprintf("Namespace and deployment for custom resource (%s) created successfully", classroom.Name)})
+		Message: fmt.Sprintf("Everything for custom resource (%s) created successfully", classroom.Name)})
 
 	if err := r.Status().Update(ctx, classroom); err != nil {
 		log.Error(err, "Failed to update user status")
@@ -336,94 +368,8 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-// namespaceForClass returns a namespace for the Kubelabuser.
-func (r *ClassroomReconciler) namespaceForClass(classroom *kubelabv1.Classroom) (*v1.Namespace, error) {
-	ls := labelsForClassroom(classroom.Name)
-
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   classroom.Spec.Namespace,
-			Labels: ls,
-		},
-	}
-
-	// Set the ownerRef for the Namespace for deletion of dependent, which does not seem to work with NS
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
-	if err := ctrl.SetControllerReference(classroom, ns, r.Scheme); err != nil {
-		return nil, err
-	}
-	return ns, nil
-}
-
-// deploymentForClassroom returns a Deployment object.
-func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classroom, student *kubelabv1.KubelabUser) (*v1apps.Deployment, error) {
-	ls := labelsForClassroom(classroom.Spec.Namespace)
-	replicas := int32(1)
-
-	deployment := &v1apps.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      classroom.Spec.Namespace,
-			Namespace: student.Spec.Id,
-		},
-		Spec: v1apps.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: ls,
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: ls,
-				},
-				Spec: v1.PodSpec{
-					// let only run on linux for now
-					Affinity: &v1.Affinity{
-						NodeAffinity: &v1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
-								NodeSelectorTerms: []v1.NodeSelectorTerm{
-									{
-										MatchExpressions: []v1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/arch",
-												Operator: "In",
-												Values:   []string{"amd64", "arm64", "ppc64le", "s390x"},
-											},
-											{
-												Key:      "kubernetes.io/os",
-												Operator: "In",
-												Values:   []string{"linux"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-					Containers: []v1.Container{{
-						Image:           classroom.Spec.TemplateContainer,
-						Name:            classroom.Spec.Namespace,
-						ImagePullPolicy: v1.PullIfNotPresent,
-						Ports: []v1.ContainerPort{{
-							// TODO change Port
-							ContainerPort: 4222,
-							Name:          "classroom-port",
-						}},
-						// Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
-					}},
-				},
-			},
-		},
-	}
-
-	// Set the ownerRef for the Deployment
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
-	if err := ctrl.SetControllerReference(classroom, deployment, r.Scheme); err != nil {
-		return nil, err
-	}
-	return deployment, nil
-}
-
 // labelsForClassroom returns the labels for selecting the resources.
-func labelsForClassroom(name string) map[string]string {
+func labelsForClassroom(name string, student string) map[string]string {
 
 	return map[string]string{
 		"app.kubernetes.io/name":       "KubelabClassroom",
@@ -431,6 +377,8 @@ func labelsForClassroom(name string) map[string]string {
 		"app.kubernetes.io/version":    "1",
 		"app.kubernetes.io/part-of":    "classroom-operator",
 		"app.kubernetes.io/created-by": "controller-manager",
+		"class":                        name,
+		"student":                      student,
 	}
 }
 
