@@ -37,7 +37,7 @@ metadata:
   name: java-classroom
 spec:
   namespace: "java-classroom"
-  templateContainer: "nginx:latest"
+  templateContainer: "lscr.io/linuxserver/openssh-server:latest"
   teacher:
     spec:
       id: "t01"

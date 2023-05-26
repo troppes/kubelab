@@ -10,13 +10,21 @@
 		token = $page.data.session.user.id_token;
 	}
 
-	const scaleHandler = async (e) => {
+	// write onmount to fetch deployments
+	onMount(async () => {
 		try {
-			// TODO
-			await scaleDeployment(token, e.srcElement.dataset.id);
-			deployments = getDeployments(token); // pull updated list
+			deployments = getDeployments(token);
 		} catch (error) {
 			console.log(error);
+		}
+	});
+
+	const scaleHandler = async (e) => {
+		try {
+			await scaleDeployment(token, e.srcElement.dataset.id);
+			deployments = await getDeployments(token); // pull updated list
+		} catch (error) {
+			deployments = error;
 		}
 	};
 </script>
@@ -26,7 +34,7 @@
 		<div class="item">
 			<h1>Welcome to Kubelab</h1>
 			<p>Your Roles are: {$page.data.session?.user?.roles}</p>
-			{#await getDeployments(token)}
+			{#await deployments}
 				<div>
 					<p>Fetching Classrooms ...</p>
 				</div>
@@ -48,11 +56,11 @@
 											{deploy.metadata.name}
 										</td>
 										<td>
-											{deploy.status.availableReplicas == 1 ? 'On' : 'Off'}
+											{deploy.status.replicas == 1 ? 'On' : 'Off'}
 										</td>
 										<td>
 											<button class="button" data-id={deploy.metadata.name} on:click={scaleHandler}
-												>Stop</button
+												>{deploy.status.replicas == 1 ? 'Stop' : 'Start'}</button
 											>
 										</td>
 									</tr>
