@@ -5,7 +5,7 @@ export async function getDeployments(token) {
 }
 
 export async function scaleDeployment(token, name) {
-    return get(token, '/api/kubelab/deploy/scale/' + name);
+    return put(token, {}, '/api/kubelab/deploy/scale/' + name);
 }
 
 export async function getConnectionString(token, name) {
