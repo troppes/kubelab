@@ -6,25 +6,25 @@ import { decode, getKubeConfig } from '$lib/helpers.js';
 export async function GET({ request, params }) {
     let id_token = request.headers.get('Authorization');
     let svcName = params.slug;
-    let user_id = '';
+    let token = null;
     try {
-        user_id = decode(id_token).preferred_username;
+        token = decode(id_token);
     } catch (err) {
         return new Response(JSON.stringify({ message: 'Invalid token' }), { status: 401, statusText: 'Error: Invalid token' });
     }
 
     let response = new Response(JSON.stringify({ message: 'Internal server error' }), { status: 500 });
 
-    if (id_token) {
+    if (token) {
         let kc = getKubeConfig(id_token, env.KUBERNETES_SERVER_URL, env.KUBERNETES_CA_Path);
         let k8sApi = kc.makeApiClient(k8s.CoreV1Api);
         try {
-            const svcDetail = await k8sApi.readNamespacedService(svcName, user_id);
+            const svcDetail = await k8sApi.readNamespacedService(svcName, token.user_id);
 
             const connectionString =
                 'ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" ' +
                 '-p' + svcDetail.body.spec.ports[0].nodePort + ' ' +
-                user_id + '@' + env.LOADBALANCER_IP;
+                token.preferred_username + '@' + env.LOADBALANCER_IP;
 
 
             response = new Response(JSON.stringify(connectionString), { status: 200, statusText: 'Success' });

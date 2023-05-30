@@ -7,7 +7,7 @@ export async function GET({ request }) {
     let id_token = request.headers.get('Authorization');
     let user_id = '';
     try {
-        user_id = decode(id_token).preferred_username;
+        user_id = decode(id_token).user_id;
     } catch (err) {
         return new Response(JSON.stringify({ message: 'Invalid token' }), { status: 401, statusText: 'Invalid token' });
     }
