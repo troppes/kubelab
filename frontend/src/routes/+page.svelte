@@ -76,17 +76,18 @@
 											{deploy.metadata.name}
 										</td>
 										<td>
-											{deploy.status.replicas == 1 ? 'On' : 'Off'}
+											{deploy.spec.replicas == 1 ? 'On' : 'Off'}
 										</td>
 										<td>
 											<button class="button" data-id={deploy.metadata.name} on:click={scaleHandler}
-												>{deploy.status.replicas == 1 ? 'Stop' : 'Start'}</button
+												>{deploy.spec.replicas == 1 ? 'Stop' : 'Start'}</button
 											>
 										</td>
 										<td>
 											<button
 												class="button"
 												data-id={deploy.metadata.name}
+												disabled={deploy.spec.replicas == 0}
 												on:click={connectionHandler}>Connect</button
 											>
 										</td>

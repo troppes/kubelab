@@ -76,6 +76,13 @@ body {
     background: linear-gradient(145deg, #f9897c, #d27368);
 }
 
-.button:hover {
+.button:hover:not(:disabled) {
     background: #E98074;
+}
+
+button:disabled,
+button[disabled] {
+    border: 1px solid #999999;
+    background: #cccccc;
+    color: #666666;
 }
