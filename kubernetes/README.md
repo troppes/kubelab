@@ -10,8 +10,7 @@ sudo kubeadm init --pod-network-cidr=192.168.178.0/24
 
 ## Calico
 ```
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/tigera-operator.yaml
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/custom-resources.yaml
+From website
 ```
 
 ## Countour
@@ -24,6 +23,8 @@ Afterwards the `02-service-envoy.yaml` needs to be applied to configure the exte
 ## KeyCloak
 
 Keycload isused to create the users
+
+Kubeadm upgrade kills the api server manifest
 
 ## Cert Manager
 
