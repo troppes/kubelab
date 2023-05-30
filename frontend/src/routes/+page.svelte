@@ -106,8 +106,6 @@
 					<p style="color: red">Error message: {error.body.message}</p>
 				</div>
 			{/await}
-			<p>This is a protected content. You can access this content because you are signed in.</p>
-			<p>Session expiry: {$page.data.session?.expires}</p>
 		</div>
 	</div>
 {:else}

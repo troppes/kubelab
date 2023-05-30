@@ -3,7 +3,7 @@ kind: KubelabUser
 metadata:
   labels:
     app.kubernetes.io/name: student
-    app.kubernetes.io/instance: kubelabuser-sime-class
+    app.kubernetes.io/instance: kubelabuser-simple-class
     app.kubernetes.io/part-of: kubelab
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kubelab
@@ -16,7 +16,7 @@ kind: KubelabUser
 metadata:
   labels:
     app.kubernetes.io/name: teacher
-    app.kubernetes.io/instance: kubelabuser-sime-class
+    app.kubernetes.io/instance: kubelabuser-simple-class
     app.kubernetes.io/part-of: kubelab
     app.kubernetes.io/managed-by: example
     app.kubernetes.io/created-by: kubelab
