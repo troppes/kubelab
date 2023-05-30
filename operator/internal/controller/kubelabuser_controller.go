@@ -38,7 +38,9 @@ import (
 
 const userFinalizer = "kubeuser.kubelab.local/finalizer"
 const roleBindingName = "user-rolebinding"
+const claimNameUser = "user-claim"
 const roleName = "user-role"
+const storageClass = "nfs-client"
 const groupPrefix = "keycloak:"
 
 // KubelabUserReconciler reconciles a KubelabUser object
@@ -59,6 +61,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// Fetch the instance
 	user := &kubelabv1.KubelabUser{}
 	err := r.Get(ctx, req.NamespacedName, user)
+	log.Info(user.Name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// If the custom resource is not found then, it usually means that it was deleted or not created
@@ -271,6 +274,42 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	// Check if the Claim already exists, if not create a new Claim
+	claim := &v1.PersistentVolumeClaim{}
+	err = r.Get(ctx, types.NamespacedName{Name: claimNameUser, Namespace: user.Spec.Id}, claim)
+	if err != nil && apierrors.IsNotFound(err) {
+		// Define a new Role
+		claim, err := r.persistentVolumeClaimForUser(user)
+
+		if err != nil {
+			log.Error(err, "Failed to define new PVC resource for user")
+
+			// The following implementation will update the status
+			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
+				Status: metav1.ConditionFalse, Reason: "Reconciling",
+				Message: fmt.Sprintf("Failed to create PVC for the custom resource (%s): (%s)", user.Spec.Id, err)})
+
+			if err := r.Status().Update(ctx, user); err != nil {
+				log.Error(err, "Failed to update user status")
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("Creating new PVC")
+
+		if err = r.Create(ctx, claim); err != nil {
+			log.Error(err, "Failed to create new PVC")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get PVC")
+		// Return the error for the reconciliation be re-trigged again
+		return ctrl.Result{}, err
+	}
+
 	// The following implementation will update the status
 	meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
@@ -289,5 +328,8 @@ func (r *KubelabUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kubelabv1.KubelabUser{}).
 		Owns(&v1.Namespace{}).
+		Owns(&v1rbac.Role{}).
+		Owns(&v1rbac.RoleBinding{}).
+		Owns(&v1.PersistentVolumeClaim{}).
 		Complete(r)
 }

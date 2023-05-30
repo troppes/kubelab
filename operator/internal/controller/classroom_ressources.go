@@ -2,6 +2,7 @@ package controller
 
 import (
 	v1 "k8s.io/api/core/v1"
+	resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubelabv1 "kubelab.local/kubelab/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,7 +59,7 @@ func (r *ClassroomReconciler) serviceForClassroom(classroom *kubelabv1.Classroom
 // deploymentForClassroom returns a Deployment object.
 func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classroom, student *kubelabv1.KubelabUser) (*v1apps.Deployment, error) {
 	ls := labelsForClassroom(classroom.Spec.Namespace, student.Spec.Id)
-	replicas := int32(1)
+	replicas := int32(0)
 
 	deployment := &v1apps.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -117,14 +118,30 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 							},
 							{
 								Name:  "USER_NAME",
-								Value: "admin",
+								Value: student.Name,
 							},
 							{
 								Name:  "USER_PASSWORD",
-								Value: "admin",
+								Value: student.Name,
+							},
+						},
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "user-data",
+								MountPath: "/home/" + student.Name,
 							},
 						},
 					}},
+					Volumes: []v1.Volume{
+						{
+							Name: "user-data",
+							VolumeSource: v1.VolumeSource{
+								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+									ClaimName: claimNameUser,
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -136,4 +153,37 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 		return nil, err
 	}
 	return deployment, nil
+}
+
+// persistentVolumeClaimForClassroom returns pvc to have a classroom folder.
+func (r *KubelabUserReconciler) persistentVolumeClaimForClassroom(user *kubelabv1.KubelabUser) (*v1.PersistentVolumeClaim, error) {
+	storageClassName := storageClass
+
+	claim := &v1.PersistentVolumeClaim{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PersistentVolumeClaim",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      claimNameClass,
+			Namespace: user.Spec.Id,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			StorageClassName: &storageClassName,
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadOnlyMany,
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("100Mi"),
+				},
+			},
+		},
+	}
+
+	if err := ctrl.SetControllerReference(user, claim, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return claim, nil
 }

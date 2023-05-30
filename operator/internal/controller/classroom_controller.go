@@ -40,6 +40,7 @@ import (
 const classroomFinalizer = "classroom.kubelab.local/finalizer"
 const classroomOwnerKey = ".metadata.namespace"
 const userOwnerKey = ".spec.id"
+const claimNameClass = "class-storage"
 
 // ClassroomReconciler reconciles a Classroom object
 type ClassroomReconciler struct {
@@ -230,8 +231,16 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		deployment := &v1apps.Deployment{}
 		err := r.Get(ctx, types.NamespacedName{Name: classroom.Spec.Namespace, Namespace: student.Spec.Id}, deployment)
 		if err != nil && apierrors.IsNotFound(err) {
+
+			// fetch full student object
+			studentList := &kubelabv1.KubelabUserList{}
+			if err := r.List(ctx, studentList, client.MatchingFields{userOwnerKey: student.Spec.Id}); err != nil || len(studentList.Items) == 0 {
+				log.Error(err, "Unable to find Student")
+				return ctrl.Result{}, err
+			}
+
 			// Define a new deployment
-			dep, err := r.deploymentForClassroom(classroom, &student)
+			dep, err := r.deploymentForClassroom(classroom, &studentList.Items[0])
 			// If failing write Error inside Status
 			if err != nil {
 				log.Error(err, "Failed to define new Deployment resource for Classroom")
@@ -295,11 +304,11 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{Requeue: true}, nil
 		}
 
-		// Check if the deployment already exists, if not create a new one
+		// Check if the svc already exists, if not create a new one
 		service := &v1.Service{}
 		err = r.Get(ctx, types.NamespacedName{Name: classroom.Spec.Namespace, Namespace: student.Spec.Id}, service)
 		if err != nil && apierrors.IsNotFound(err) {
-			// Define a new deployment
+			// Define a new svc
 			svc, err := r.serviceForClassroom(classroom, &student)
 			// If failing write Error inside Status
 			if err != nil {
@@ -404,5 +413,6 @@ func (r *ClassroomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&kubelabv1.KubelabUser{}).
 		Owns(&v1apps.Deployment{}).
 		Owns(&v1.Namespace{}).
+		Owns(&v1.Service{}).
 		Complete(r)
 }

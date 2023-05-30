@@ -3,6 +3,7 @@ package controller
 import (
 	v1 "k8s.io/api/core/v1"
 	v1rbac "k8s.io/api/rbac/v1"
+	resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubelabv1 "kubelab.local/kubelab/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -96,4 +97,37 @@ func labelsForUser(name string) map[string]string {
 		"app.kubernetes.io/part-of":    "kubelabuser-operator",
 		"app.kubernetes.io/created-by": "controller-manager",
 	}
+}
+
+// persistentVolumeClaimForUser returns pvc to have private folder.
+func (r *KubelabUserReconciler) persistentVolumeClaimForUser(user *kubelabv1.KubelabUser) (*v1.PersistentVolumeClaim, error) {
+	storageClassName := storageClass
+
+	claim := &v1.PersistentVolumeClaim{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PersistentVolumeClaim",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      claimNameUser,
+			Namespace: user.Spec.Id,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			StorageClassName: &storageClassName,
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteMany,
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("100Mi"),
+				},
+			},
+		},
+	}
+
+	if err := ctrl.SetControllerReference(user, claim, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return claim, nil
 }
