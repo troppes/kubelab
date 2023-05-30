@@ -44,3 +44,23 @@ spec:
   enrolledStudents:
     - spec:
         id: "575103"
+---
+apiVersion: kubelab.kubelab.local/v1
+kind: Classroom
+metadata:
+  labels:
+    app.kubernetes.io/name: C-Classroom
+    app.kubernetes.io/instance: classroom
+    app.kubernetes.io/part-of: kubelab
+    app.kubernetes.io/managed-by: example
+    app.kubernetes.io/created-by: kubelab
+  name: c-classroom
+spec:
+  namespace: "c-classroom"
+  templateContainer: "lscr.io/linuxserver/openssh-server:latest"
+  teacher:
+    spec:
+      id: "t01"
+  enrolledStudents:
+    - spec:
+        id: "575103"
