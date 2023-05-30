@@ -130,6 +130,10 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 								Name:      "user-data",
 								MountPath: "/home/" + student.Name,
 							},
+							{
+								Name:      "class-data",
+								MountPath: "/" + classroom.Spec.Namespace,
+							},
 						},
 					}},
 					Volumes: []v1.Volume{
@@ -138,6 +142,16 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 							VolumeSource: v1.VolumeSource{
 								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
 									ClaimName: claimNameUser,
+								},
+							},
+						},
+						{
+							Name: "class-data",
+							VolumeSource: v1.VolumeSource{
+								NFS: &v1.NFSVolumeSource{
+									Server:   "192.168.188.13",
+									Path:     "/srv/kubernetes/" + classroom.Spec.Namespace + "/" + claimNameClass, // path pattern in the storageClass defined
+									ReadOnly: true,
 								},
 							},
 						},
@@ -156,7 +170,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 }
 
 // persistentVolumeClaimForClassroom returns pvc to have a classroom folder.
-func (r *KubelabUserReconciler) persistentVolumeClaimForClassroom(user *kubelabv1.KubelabUser) (*v1.PersistentVolumeClaim, error) {
+func (r *ClassroomReconciler) persistentVolumeClaimForClassroom(class *kubelabv1.Classroom) (*v1.PersistentVolumeClaim, error) {
 	storageClassName := storageClass
 
 	claim := &v1.PersistentVolumeClaim{
@@ -166,7 +180,7 @@ func (r *KubelabUserReconciler) persistentVolumeClaimForClassroom(user *kubelabv
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimNameClass,
-			Namespace: user.Spec.Id,
+			Namespace: class.Spec.Namespace,
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,
@@ -181,7 +195,7 @@ func (r *KubelabUserReconciler) persistentVolumeClaimForClassroom(user *kubelabv
 		},
 	}
 
-	if err := ctrl.SetControllerReference(user, claim, r.Scheme); err != nil {
+	if err := ctrl.SetControllerReference(class, claim, r.Scheme); err != nil {
 		return nil, err
 	}
 

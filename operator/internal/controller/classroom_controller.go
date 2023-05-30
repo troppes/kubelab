@@ -362,7 +362,40 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	// Create Mount for Class (later)
+	// Check if the Claim already exists, if not create a new Claim
+	claim := &v1.PersistentVolumeClaim{}
+	if err := r.Get(ctx, client.ObjectKey{Name: claimNameClass, Namespace: classroom.Spec.Namespace}, claim); err != nil && apierrors.IsNotFound(err) {
+		// Define a new Role
+		claim, err := r.persistentVolumeClaimForClassroom(classroom)
+
+		if err != nil {
+			log.Error(err, "Failed to define new PVC resource for classroom")
+
+			// The following implementation will update the status
+			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
+				Status: metav1.ConditionFalse, Reason: "Reconciling",
+				Message: fmt.Sprintf("Failed to create PVC for the custom resource (%s): (%s)", classroom.Name, err)})
+
+			if err := r.Status().Update(ctx, classroom); err != nil {
+				log.Error(err, "Failed to update status")
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("Creating new PVC")
+
+		if err = r.Create(ctx, claim); err != nil {
+			log.Error(err, "Failed to create new PVC")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get PVC")
+		// Return the error for the reconciliation be re-trigged again
+		return ctrl.Result{}, err
+	}
 
 	// The following implementation will update the status
 	meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
@@ -370,7 +403,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		Message: fmt.Sprintf("Everything for custom resource (%s) created successfully", classroom.Name)})
 
 	if err := r.Status().Update(ctx, classroom); err != nil {
-		log.Error(err, "Failed to update user status")
+		log.Error(err, "Failed to update status")
 		return ctrl.Result{}, err
 	}
 
