@@ -28,6 +28,8 @@ type ClassroomSpec struct {
 	Namespace         string        `json:"namespace,omitempty"`
 	EnrolledStudents  []KubelabUser `json:"enrolledStudents,omitempty"`
 	TemplateContainer string        `json:"templateContainer,omitempty"`
+	AllowUserRoot     string        `json:"allowUserRoot,omitempty"`
+	RootPass          string        `json:"rootPass,omitempty"`
 }
 
 // ClassroomStatus defines the observed state of Classroom

@@ -111,6 +111,9 @@ func (r *KubelabUserReconciler) persistentVolumeClaimForUser(user *kubelabv1.Kub
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimNameUser,
 			Namespace: user.Spec.Id,
+			Annotations: map[string]string{
+				"nfs.io/storage-path": "student",
+			},
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,

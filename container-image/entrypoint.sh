@@ -9,26 +9,38 @@ echo "Working dir:  '$(pwd)'"
 
 
 # Read the environment variables
-username=$USERNAME
-password=$PASSWORD
+username=$USER_NAME
+password=$USER_PASSWORD
+isSudo=${SUDO_ACCESS:-notSet} # assigns "false" if SUDO_ACCESS is not set
+rootPassword=$ROOT_PASSWORD
+
 
 # Check if both variables are provided
-if [ -z "$username" ] || [ -z "$password" ]; then
-  echo "Both USERNAME and PASSWORD environment variables must be set."
+if [ -z "$username" ] || [ -z "$password" ] || [ -z "$rootPassword" ]; then
+  echo "USER_NAME and USER_PASSWORD and ROOT_PASSWORD environment variables must be set."
   exit 1
 fi
 
-# Generate an encrypted password
-encrypted_password=$(openssl passwd -6 "$password")
-
 # Create the user
-useradd -m -p "$encrypted_password" -s /bin/bash "$username"
+useradd -m -p "$password" -s /bin/bash "$username"
+if [ "$isSudo" == "true" ] || [ "$isSudo" == "TRUE" ]; then
+  usermod -aG sudo "$username"
+  echo "User $username has been added to the sudoers group."
+fi
 
 # Check if the user creation was successful
 if [ $? -eq 0 ]; then
   echo "User $username created successfully."
 else
   echo "Failed to create user $username."
+fi
+
+# Change root pw
+usermod --password "$rootPassword" root
+if [ $? -eq 0 ]; then
+  echo "Root pw changed successfully."
+else
+  echo "Failed to change root pw."
 fi
 
 service ssh start

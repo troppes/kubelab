@@ -36,13 +36,6 @@ import (
 	kubelabv1 "kubelab.local/kubelab/api/v1"
 )
 
-const userFinalizer = "kubeuser.kubelab.local/finalizer"
-const roleBindingName = "user-rolebinding"
-const claimNameUser = "user-claim"
-const roleName = "user-role"
-const storageClass = "nfs-client"
-const groupPrefix = "keycloak:"
-
 // KubelabUserReconciler reconciles a KubelabUser object
 type KubelabUserReconciler struct {
 	client.Client

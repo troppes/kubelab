@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"golang.org/x/crypto/bcrypt"
 	v1 "k8s.io/api/core/v1"
 	resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,6 +62,15 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 	ls := labelsForClassroom(classroom.Spec.Namespace, student.Spec.Id)
 	replicas := int32(0)
 
+	userHash, err := bcrypt.GenerateFromPassword([]byte(student.Name), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+	rootHash, err := bcrypt.GenerateFromPassword([]byte(classroom.Spec.RootPass), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
 	deployment := &v1apps.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      classroom.Spec.Namespace,
@@ -104,17 +114,17 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 						Name:            classroom.Spec.Namespace,
 						ImagePullPolicy: v1.PullIfNotPresent,
 						Ports: []v1.ContainerPort{{
-							ContainerPort: 2222,
+							ContainerPort: 22,
 							Name:          "classroom-port",
 						}},
 						Env: []v1.EnvVar{
 							{
-								Name:  "PASSWORD_ACCESS",
-								Value: "true",
+								Name:  "ROOT_PASSWORD",
+								Value: string(rootHash),
 							},
 							{
 								Name:  "SUDO_ACCESS",
-								Value: "true",
+								Value: classroom.Spec.AllowUserRoot,
 							},
 							{
 								Name:  "USER_NAME",
@@ -122,7 +132,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 							},
 							{
 								Name:  "USER_PASSWORD",
-								Value: student.Name,
+								Value: string(userHash),
 							},
 						},
 						VolumeMounts: []v1.VolumeMount{
@@ -150,7 +160,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 							VolumeSource: v1.VolumeSource{
 								NFS: &v1.NFSVolumeSource{
 									Server:   "192.168.188.13",
-									Path:     "/srv/kubernetes/" + classroom.Spec.Namespace + "/" + claimNameClass, // path pattern in the storageClass defined
+									Path:     "/srv/kubernetes/class/" + classroom.Spec.Namespace, // path pattern in the storageClass defined
 									ReadOnly: true,
 								},
 							},
@@ -181,6 +191,9 @@ func (r *ClassroomReconciler) persistentVolumeClaimForClassroom(class *kubelabv1
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimNameClass,
 			Namespace: class.Spec.Namespace,
+			Annotations: map[string]string{
+				"nfs.io/storage-path": "class",
+			},
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,

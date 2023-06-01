@@ -1,12 +1,6 @@
 apiVersion: kubelab.kubelab.local/v1
 kind: KubelabUser
 metadata:
-  labels:
-    app.kubernetes.io/name: student
-    app.kubernetes.io/instance: kubelabuser-simple-class
-    app.kubernetes.io/part-of: kubelab
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: kubelab
   name: s575103
 spec:
   id: "575103"
@@ -14,12 +8,6 @@ spec:
 apiVersion: kubelab.kubelab.local/v1
 kind: KubelabUser
 metadata:
-  labels:
-    app.kubernetes.io/name: teacher
-    app.kubernetes.io/instance: kubelabuser-simple-class
-    app.kubernetes.io/part-of: kubelab
-    app.kubernetes.io/managed-by: example
-    app.kubernetes.io/created-by: kubelab
   name: teacher
 spec:
   id: "t01"
@@ -28,16 +16,14 @@ spec:
 apiVersion: kubelab.kubelab.local/v1
 kind: Classroom
 metadata:
-  labels:
-    app.kubernetes.io/name: Java-Classroom
-    app.kubernetes.io/instance: classroom
-    app.kubernetes.io/part-of: kubelab
-    app.kubernetes.io/managed-by: example
-    app.kubernetes.io/created-by: kubelab
+  annotations:
+    nfs.io/storage-path: class
   name: java-classroom
 spec:
   namespace: "java-classroom"
-  templateContainer: "lscr.io/linuxserver/openssh-server:latest"
+  templateContainer: "floreitz/kubelab_base:latest"
+  allowUserRoot: "true"
+  rootPass: "toor"
   teacher:
     spec:
       id: "t01"
@@ -48,16 +34,14 @@ spec:
 apiVersion: kubelab.kubelab.local/v1
 kind: Classroom
 metadata:
-  labels:
-    app.kubernetes.io/name: C-Classroom
-    app.kubernetes.io/instance: classroom
-    app.kubernetes.io/part-of: kubelab
-    app.kubernetes.io/managed-by: example
-    app.kubernetes.io/created-by: kubelab
+  annotations:
+    nfs.io/storage-path: class
   name: c-classroom
 spec:
   namespace: "c-classroom"
-  templateContainer: "lscr.io/linuxserver/openssh-server:latest"
+  allowUserRoot: "false"
+  rootPass: "toor"
+  templateContainer: "floreitz/kubelab_base:latest"
   teacher:
     spec:
       id: "t01"

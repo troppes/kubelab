@@ -37,11 +37,6 @@ import (
 	kubelabv1 "kubelab.local/kubelab/api/v1"
 )
 
-const classroomFinalizer = "classroom.kubelab.local/finalizer"
-const classroomOwnerKey = ".metadata.namespace"
-const userOwnerKey = ".spec.id"
-const claimNameClass = "class-storage"
-
 // ClassroomReconciler reconciles a Classroom object
 type ClassroomReconciler struct {
 	client.Client
