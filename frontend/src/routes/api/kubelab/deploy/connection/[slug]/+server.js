@@ -22,8 +22,7 @@ export async function GET({ request, params }) {
             const svcDetail = await k8sApi.readNamespacedService(svcName, token.user_id);
 
             const connectionString =
-                'ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" ' +
-                '-p' + svcDetail.body.spec.ports[0].nodePort + ' ' +
+                'ssh -p' + svcDetail.body.spec.ports[0].nodePort + ' ' +
                 token.preferred_username + '@' + env.LOADBALANCER_IP;
 
 
