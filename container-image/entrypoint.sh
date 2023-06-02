@@ -11,7 +11,7 @@ echo "Working dir:  '$(pwd)'"
 # Read the environment variables
 username=$USER_NAME
 password=$USER_PASSWORD
-isSudo=${SUDO_ACCESS:-notSet} # assigns "false" if SUDO_ACCESS is not set
+isSudo=$(echo "$SUDO_ACCESS" | tr '[:upper:]' '[:lower:]')
 rootPassword=$ROOT_PASSWORD
 
 
@@ -23,7 +23,7 @@ fi
 
 # Create the user
 useradd -m -p "$password" -s /bin/bash "$username"
-if [ "$isSudo" == "true" ] || [ "$isSudo" == "TRUE" ]; then
+if [ "$isSudo" = "true" ]; then
   usermod -aG sudo "$username"
   echo "User $username has been added to the sudoers group."
 fi
@@ -42,6 +42,11 @@ if [ $? -eq 0 ]; then
 else
   echo "Failed to change root pw."
 fi
+
+# setup permanent host key, so that ssh does not complain
+mkdir -p /home/"$username"/.kubelab
+cp /etc/ssh/ssh_host_rsa_key /home/"$username"/.kubelab/ssh_host_rsa_key
+sed -i "s/#HostKey \/etc\/ssh\/ssh_host_rsa_key/HostKey \/home\/$username\/.kubelab\/ssh_host_rsa_key/" /etc/ssh/sshd_config
 
 service ssh start
 rsyslogd # start rsyslog to fill /var/log/auth.log
