@@ -3,8 +3,10 @@ package controller
 import (
 	"golang.org/x/crypto/bcrypt"
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	kubelabv1 "kubelab.local/kubelab/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -38,7 +40,7 @@ func (r *ClassroomReconciler) serviceForClassroom(classroom *kubelabv1.Classroom
 			Type: v1.ServiceTypeNodePort,
 			Ports: []v1.ServicePort{
 				{
-					Port: 2222,
+					Port: 22,
 					// TargetPort: intstr.FromInt(2222), defaults to port if not set
 					// NodePort:   30000, // Randomly assigned if not set
 				},
@@ -112,11 +114,32 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 					Containers: []v1.Container{{
 						Image:           classroom.Spec.TemplateContainer,
 						Name:            classroom.Spec.Namespace,
-						ImagePullPolicy: v1.PullIfNotPresent,
+						ImagePullPolicy: v1.PullAlways,
 						Ports: []v1.ContainerPort{{
 							ContainerPort: 22,
 							Name:          "classroom-port",
 						}},
+						SecurityContext: &v1.SecurityContext{
+							Capabilities: &v1.Capabilities{
+								Add: []v1.Capability{
+									"SYS_CHROOT",
+									"AUDIT_WRITE",
+									"NET_RAW", // for ping but maybe not safe!
+								},
+							},
+						},
+						Resources: v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								"ephemeral-storage": resource.MustParse("1Gi"),
+								"cpu":               resource.MustParse("100m"),
+								"memory":            resource.MustParse("256Mi"),
+							},
+							Requests: v1.ResourceList{
+								"ephemeral-storage": resource.MustParse("1Gi"),
+								"cpu":               resource.MustParse("100m"),
+								"memory":            resource.MustParse("256Mi"),
+							},
+						},
 						Env: []v1.EnvVar{
 							{
 								Name:  "ROOT_PASSWORD",
@@ -213,4 +236,59 @@ func (r *ClassroomReconciler) persistentVolumeClaimForClassroom(class *kubelabv1
 	}
 
 	return claim, nil
+}
+
+// deploymentForClassroom returns a service object.
+func (r *ClassroomReconciler) networkPolicyForClassroom(classroom *kubelabv1.Classroom, student *kubelabv1.KubelabUser) (*networkingv1.NetworkPolicy, error) {
+	port := intstr.FromInt(22)
+	protocol := v1.ProtocolTCP
+
+	networkPolicy := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ssh-only-policy",
+			Namespace: "your-namespace",
+		},
+		Spec: networkingv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "your-app-label",
+				},
+			},
+			Ingress: []networkingv1.NetworkPolicyIngressRule{
+				{
+					From: []networkingv1.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"class":   classroom.Spec.Namespace,
+									"student": student.Spec.Id,
+								},
+							},
+						},
+					},
+					Ports: []networkingv1.NetworkPolicyPort{
+						{
+							Protocol: &protocol,
+							Port:     &port,
+						},
+					},
+				},
+			},
+			Egress: []networkingv1.NetworkPolicyEgressRule{
+				{
+					To: []networkingv1.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Set the ownerRef
+	if err := ctrl.SetControllerReference(classroom, networkPolicy, r.Scheme); err != nil {
+		return nil, err
+	}
+	return networkPolicy, nil
 }
