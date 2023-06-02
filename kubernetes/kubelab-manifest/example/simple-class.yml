@@ -20,7 +20,6 @@ metadata:
     nfs.io/storage-path: class
   name: java-classroom
 spec:
-  namespace: "java-classroom"
   templateContainer: "floreitz/kubelab_base:latest"
   allowUserRoot: "true"
   rootPass: "toor"
@@ -38,9 +37,26 @@ metadata:
     nfs.io/storage-path: class
   name: c-classroom
 spec:
-  namespace: "c-classroom"
   allowUserRoot: "false"
   rootPass: "toor"
+  templateContainer: "floreitz/kubelab_base:latest"
+  teacher:
+    spec:
+      id: "t01"
+  enrolledStudents:
+    - spec:
+        id: "575103"
+---
+apiVersion: kubelab.kubelab.local/v1
+kind: Classroom
+metadata:
+  annotations:
+    nfs.io/storage-path: class
+  name: c-exam
+spec:
+  allowUserRoot: "false"
+  rootPass: "toor"
+  enableExamMode: "true"
   templateContainer: "floreitz/kubelab_base:latest"
   teacher:
     spec:

@@ -37,6 +37,8 @@ spec:
             properties:
               allowUserRoot:
                 type: string
+              enableExamMode:
+                type: string
               enrolledStudents:
                 items:
                   description: KubelabUser is the Schema for the kubelabusers API
@@ -149,8 +151,6 @@ spec:
                       type: object
                   type: object
                 type: array
-              namespace:
-                type: string
               rootPass:
                 type: string
               teacher:

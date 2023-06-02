@@ -20,10 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	v1apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -118,7 +120,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			}
 
 			// Since the Owners Reference does not delete the Namespace the Finalizer is used
-			namespaceName := classroom.Spec.Namespace
+			namespaceName := classroom.Name
 			ns := &v1.Namespace{}
 			err := r.Get(ctx, client.ObjectKey{Name: namespaceName}, ns)
 			if err == nil {
@@ -185,7 +187,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// create a NS for class and Mount
 	ns := &v1.Namespace{}
-	if err := r.Get(ctx, client.ObjectKey{Name: classroom.Spec.Namespace}, ns); err != nil && apierrors.IsNotFound(err) {
+	if err := r.Get(ctx, client.ObjectKey{Name: classroom.Name}, ns); err != nil && apierrors.IsNotFound(err) {
 		// Define a new NS
 		ns, err := r.namespaceForClass(classroom)
 
@@ -224,7 +226,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	for _, student := range students {
 		// Check if the deployment already exists, if not create a new one
 		deployment := &v1apps.Deployment{}
-		err := r.Get(ctx, types.NamespacedName{Name: classroom.Spec.Namespace, Namespace: student.Spec.Id}, deployment)
+		err := r.Get(ctx, types.NamespacedName{Name: classroom.Name, Namespace: student.Spec.Id}, deployment)
 		if err != nil && apierrors.IsNotFound(err) {
 
 			// fetch full student object
@@ -301,7 +303,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		// Check if the svc already exists, if not create a new one
 		service := &v1.Service{}
-		err = r.Get(ctx, types.NamespacedName{Name: classroom.Spec.Namespace, Namespace: student.Spec.Id}, service)
+		err = r.Get(ctx, types.NamespacedName{Name: classroom.Name, Namespace: student.Spec.Id}, service)
 		if err != nil && apierrors.IsNotFound(err) {
 			// Define a new svc
 			svc, err := r.serviceForClassroom(classroom, &student)
@@ -337,11 +339,55 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, err
 		}
 
+		np := &networkingv1.NetworkPolicy{}
+		isExam := strings.ToLower(classroom.Spec.EnableExamMode) == "true"
+		err = r.Get(ctx, types.NamespacedName{Name: classroom.Name, Namespace: student.Spec.Id}, np)
+		if err != nil && apierrors.IsNotFound(err) && isExam {
+			// Define a new network policy
+			np, err := r.networkPolicyForClassroom(classroom, &student)
+			// If failing write Error inside Status
+			if err != nil {
+				log.Error(err, "Failed to define new NP resource for Classroom")
+
+				// The following implementation will update the status
+				meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
+					Status: metav1.ConditionFalse, Reason: "Reconciling",
+					Message: fmt.Sprintf("Failed to create NP for the custom resource (%s): (%s)", classroom.Name, err)})
+
+				if err := r.Status().Update(ctx, classroom); err != nil {
+					log.Error(err, "Failed to update status")
+					return ctrl.Result{}, err
+				}
+
+				return ctrl.Result{}, err
+			}
+
+			log.Info("Creating a new NetworkPolicy")
+			if err = r.Create(ctx, np); err != nil {
+				log.Error(err, "Failed to create new NP")
+				return ctrl.Result{}, err
+			}
+
+			// Reque to check if everything is alright
+			return ctrl.Result{RequeueAfter: time.Second * 10}, nil
+		} else if !isExam && err == nil { // check if it is not exam and it is found -> delete
+			if err := r.Delete(ctx, np); err != nil {
+				log.Error(err, "unable to delete network policy")
+				return ctrl.Result{}, err
+			} else {
+				log.Info("Deleted NP", "Namespace", np.Namespace)
+			}
+			return ctrl.Result{}, err
+		} else if err != nil && !apierrors.IsNotFound(err) { // it another error than not found
+			log.Error(err, "Failed to get NetworkPolicy")
+			return ctrl.Result{}, err
+		}
+
 	}
 
 	// delete if student is removed
 	deploymentList := &v1apps.DeploymentList{}
-	if err := r.List(ctx, deploymentList, client.MatchingFields{classroomOwnerKey: classroom.Spec.Namespace}); err != nil {
+	if err := r.List(ctx, deploymentList, client.MatchingFields{classroomOwnerKey: classroom.Name}); err != nil {
 		log.Error(err, "unable to list all child deployments")
 		return ctrl.Result{}, err
 	} else {
@@ -352,6 +398,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 					return ctrl.Result{}, err
 				} else {
 					log.Info("Deleted Deployment", "Deployment Namespace", deploy.Namespace)
+					return ctrl.Result{}, err
 				}
 			}
 		}
@@ -359,7 +406,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Check if the Claim already exists, if not create a new Claim
 	claim := &v1.PersistentVolumeClaim{}
-	if err := r.Get(ctx, client.ObjectKey{Name: claimNameClass, Namespace: classroom.Spec.Namespace}, claim); err != nil && apierrors.IsNotFound(err) {
+	if err := r.Get(ctx, client.ObjectKey{Name: claimNameClass, Namespace: classroom.Name}, claim); err != nil && apierrors.IsNotFound(err) {
 		// Define a new Role
 		claim, err := r.persistentVolumeClaimForClassroom(classroom)
 

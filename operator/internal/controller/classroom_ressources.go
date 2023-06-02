@@ -17,7 +17,7 @@ import (
 func (r *ClassroomReconciler) namespaceForClass(classroom *kubelabv1.Classroom) (*v1.Namespace, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: classroom.Spec.Namespace,
+			Name: classroom.Name,
 		},
 	}
 
@@ -33,7 +33,7 @@ func (r *ClassroomReconciler) namespaceForClass(classroom *kubelabv1.Classroom) 
 func (r *ClassroomReconciler) serviceForClassroom(classroom *kubelabv1.Classroom, student *kubelabv1.KubelabUser) (*v1.Service, error) {
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      classroom.Spec.Namespace,
+			Name:      classroom.Name,
 			Namespace: student.Spec.Id,
 		},
 		Spec: v1.ServiceSpec{
@@ -46,7 +46,7 @@ func (r *ClassroomReconciler) serviceForClassroom(classroom *kubelabv1.Classroom
 				},
 			},
 			Selector: map[string]string{
-				"class":   classroom.Spec.Namespace,
+				"class":   classroom.Name,
 				"student": student.Spec.Id,
 			},
 		},
@@ -61,7 +61,7 @@ func (r *ClassroomReconciler) serviceForClassroom(classroom *kubelabv1.Classroom
 
 // deploymentForClassroom returns a Deployment object.
 func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classroom, student *kubelabv1.KubelabUser) (*v1apps.Deployment, error) {
-	ls := labelsForClassroom(classroom.Spec.Namespace, student.Spec.Id)
+	ls := labelsForClassroom(classroom.Name, student.Spec.Id)
 	replicas := int32(0)
 
 	userHash, err := bcrypt.GenerateFromPassword([]byte(student.Name), bcrypt.DefaultCost)
@@ -75,7 +75,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 
 	deployment := &v1apps.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      classroom.Spec.Namespace,
+			Name:      classroom.Name,
 			Namespace: student.Spec.Id,
 		},
 		Spec: v1apps.DeploymentSpec{
@@ -113,7 +113,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 					},
 					Containers: []v1.Container{{
 						Image:           classroom.Spec.TemplateContainer,
-						Name:            classroom.Spec.Namespace,
+						Name:            classroom.Name,
 						ImagePullPolicy: v1.PullAlways,
 						Ports: []v1.ContainerPort{{
 							ContainerPort: 22,
@@ -165,7 +165,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 							},
 							{
 								Name:      "class-data",
-								MountPath: "/" + classroom.Spec.Namespace,
+								MountPath: "/" + classroom.Name,
 							},
 						},
 					}},
@@ -183,7 +183,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 							VolumeSource: v1.VolumeSource{
 								NFS: &v1.NFSVolumeSource{
 									Server:   "192.168.188.13",
-									Path:     "/srv/kubernetes/class/" + classroom.Spec.Namespace, // path pattern in the storageClass defined
+									Path:     "/srv/kubernetes/class/" + classroom.Name, // path pattern in the storageClass defined
 									ReadOnly: true,
 								},
 							},
@@ -213,7 +213,7 @@ func (r *ClassroomReconciler) persistentVolumeClaimForClassroom(class *kubelabv1
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimNameClass,
-			Namespace: class.Spec.Namespace,
+			Namespace: class.Name,
 			Annotations: map[string]string{
 				"nfs.io/storage-path": "class",
 			},
@@ -245,27 +245,19 @@ func (r *ClassroomReconciler) networkPolicyForClassroom(classroom *kubelabv1.Cla
 
 	networkPolicy := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ssh-only-policy",
-			Namespace: "your-namespace",
+			Name:      classroom.Name,
+			Namespace: student.Spec.Id,
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": "your-app-label",
+					"class":   classroom.Name,
+					"student": student.Spec.Id,
 				},
 			},
+			PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress, networkingv1.PolicyTypeEgress},
 			Ingress: []networkingv1.NetworkPolicyIngressRule{
 				{
-					From: []networkingv1.NetworkPolicyPeer{
-						{
-							PodSelector: &metav1.LabelSelector{
-								MatchLabels: map[string]string{
-									"class":   classroom.Spec.Namespace,
-									"student": student.Spec.Id,
-								},
-							},
-						},
-					},
 					Ports: []networkingv1.NetworkPolicyPort{
 						{
 							Protocol: &protocol,
@@ -274,15 +266,7 @@ func (r *ClassroomReconciler) networkPolicyForClassroom(classroom *kubelabv1.Cla
 					},
 				},
 			},
-			Egress: []networkingv1.NetworkPolicyEgressRule{
-				{
-					To: []networkingv1.NetworkPolicyPeer{
-						{
-							PodSelector: &metav1.LabelSelector{},
-						},
-					},
-				},
-			},
+			Egress: []networkingv1.NetworkPolicyEgressRule{},
 		},
 	}
 

@@ -25,11 +25,11 @@ import (
 // ClassroomSpec defines the desired state of Classroom
 type ClassroomSpec struct {
 	Teacher           KubelabUser   `json:"teacher,omitempty"`
-	Namespace         string        `json:"namespace,omitempty"`
 	EnrolledStudents  []KubelabUser `json:"enrolledStudents,omitempty"`
 	TemplateContainer string        `json:"templateContainer,omitempty"`
 	AllowUserRoot     string        `json:"allowUserRoot,omitempty"`
 	RootPass          string        `json:"rootPass,omitempty"`
+	EnableExamMode    string        `json:"enableExamMode,omitempty"`
 }
 
 // ClassroomStatus defines the observed state of Classroom
