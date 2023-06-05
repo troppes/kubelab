@@ -1,0 +1,33 @@
+version: "3"
+services:
+  kubelab:
+    image: floreitz/kubelab_frontend:latest
+    container_name: kubelab
+    restart: unless-stopped
+    ports:
+      - 8080:3000
+    volumes:
+      - user_data:/users
+      - class_data:/classes
+    environment:
+      AUTH_SECRET: ${AUTH_SECRET}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL}
+      KUBERNETES_SERVER_URL: ${KUBERNETES_SERVER_URL}
+      LOADBALANCER_IP: ${LOADBALANCER_IP}
+      KUBERNETES_CA_Path: ${KUBERNETES_CA_Path}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      AUTH_TRUST_HOST: "true"
+      ALLOW_UNTRUSTED_CERTS: "true"
+volumes:
+  user_data:
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.188.13,nolock,soft,rw"
+      device: ":/srv/kubernetes/student"
+  class_data:
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.188.13,nolock,soft,rw"
+      device: ":/srv/kubernetes/class"
