@@ -1,3 +1,4 @@
 tutorial/*
 kubebuilder/foo
 kubebuilder/cronjob
+container-image/.env
