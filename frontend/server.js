@@ -1,22 +1,21 @@
 import { handler } from './handler.js';
+import { env } from './env.js';
 import express from 'express';
 import fs from 'fs';
 import http from 'http';
 import https from 'https';
 
-const privateKey = fs.readFileSync('./key.pem', 'utf8');
-const certificate = fs.readFileSync('./cert.pem', 'utf8');
+const privateKey = fs.readFileSync(env.PRIVATE_KEY, 'utf8');
+const certificate = fs.readFileSync(env.CERTIFICATE, 'utf8');
 const credentials = { key: privateKey, cert: certificate };
-
-process.env["AUTH_TRUST_HOST"] = "true";
 
 const app = express();
 
 const httpServer = http.createServer(app);
 const httpsServer = https.createServer(credentials, app);
 
-const PORT = 80;
-const SSLPORT = 443;
+const PORT = env.PORT || 80;
+const SSLPORT = env.SSLPORT || 443;
 
 httpServer.listen(PORT, function () {
     console.log('HTTP Server is running on: http://localhost:%s', PORT);
@@ -26,7 +25,7 @@ httpsServer.listen(SSLPORT, function () {
     console.log('HTTPS Server is running on: https://localhost:%s', SSLPORT);
 });
 
-// add a route that lives separately from the SvelteKit app
+// add healthcheck for kubernetes
 app.get('/healthcheck', (req, res) => {
     res.end('ok');
 });
