@@ -8,6 +8,5 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-/container-data/cert.pem
-/container-data/key.pem
+/container_data
 /release

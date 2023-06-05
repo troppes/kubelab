@@ -49,3 +49,8 @@ You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
 
+
+## Certificates
+
+The App expects, when deployed in Docker a mount on the path `/data`, that contains the following files: `cert.pem` and `key.pem`. These files are used to serve the app over HTTPS. If you want to use a different path, you can change it in `src/server.js`. As well as the ca.crt for the connection to the Kubernetes cluster.
+

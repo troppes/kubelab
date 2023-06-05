@@ -10,6 +10,7 @@ services:
     volumes:
       - user_data:/users
       - class_data:/classes
+      - ./container_data:/data
     environment:
       AUTH_SECRET: ${AUTH_SECRET}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
