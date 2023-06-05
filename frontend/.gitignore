@@ -10,3 +10,4 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /container-data/cert.pem
 /container-data/key.pem
+/release
