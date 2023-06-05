@@ -19,10 +19,12 @@
 
 	// write onmount to fetch deployments
 	onMount(async () => {
-		try {
-			deployments = getDeployments(token);
-		} catch (error) {
-			console.log(error);
+		if ($page.data.session) {
+			try {
+				deployments = getDeployments(token);
+			} catch (error) {
+				console.log(error);
+			}
 		}
 	});
 
