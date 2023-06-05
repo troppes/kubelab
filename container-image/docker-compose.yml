@@ -1,0 +1,13 @@
+version: "3"
+services:
+  kubelab:
+    image: floreitz/kubelab_base:latest
+    container_name: kubelab-base
+    restart: unless-stopped
+    ports:
+      - 44:22
+    environment:
+      USER_NAME: ${USER_NAME}
+      USER_PASSWORD: ${USER_PASSWORD}
+      SUDO_ACCESS: ${SUDO_ACCESS}
+      ROOT_PASSWORD: ${ROOT_PASSWORD}
