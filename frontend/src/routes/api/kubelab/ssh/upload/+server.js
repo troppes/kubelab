@@ -4,7 +4,7 @@ import { decode, getKubeConfig } from '$lib/helpers.js';
 import fs from "fs";
 import path from "path";
 
-export async function POST({ request }) {
+export async function POST({ request, fetch }) {
     let id_token = request.headers.get('Authorization');
     const formData = await request.formData();
 
@@ -32,6 +32,15 @@ export async function POST({ request }) {
             fs.mkdirSync(folderPath, { recursive: true });
             // write file
             fs.writeFileSync(filePath, data);
+
+            // scale down all deployments, so the key is properly added
+            await fetch('/api/kubelab/deploy/scale/null', {
+                method: 'PUT',
+                headers: {
+                    'Content-type': 'application/json',
+                    'Authorization': `${id_token}`,
+                },
+            });
 
             response = new Response(JSON.stringify({ status: "ok" }), { status: 200, statusText: 'Success' });
         } catch (err) {

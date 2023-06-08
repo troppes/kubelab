@@ -25,7 +25,6 @@ export async function GET({ request, params }) {
                 'ssh -p' + svcDetail.body.spec.ports[0].nodePort + ' ' +
                 token.preferred_username + '@' + env.LOADBALANCER_IP;
 
-
             response = new Response(JSON.stringify(connectionString), { status: 200, statusText: 'Success' });
         } catch (err) {
             response = new Response(JSON.stringify(err.body), { status: err.statusCode, statusText: err.body.message });
