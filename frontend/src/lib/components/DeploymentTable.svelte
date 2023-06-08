@@ -51,9 +51,8 @@
 			let string = await getConnectionString(token, e.srcElement.dataset.id);
 			navigator.clipboard
 				.writeText(string)
-				.then(() => console.log('Copied'))
-				.catch((e) => console.log(e));
-			successToast('Copied!');
+				.then(() => successToast('Copied!'))
+				.catch((e) => errorToast(e));
 		} catch (error) {
 			console.log(error);
 		}
