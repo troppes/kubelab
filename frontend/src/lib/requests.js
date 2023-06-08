@@ -33,6 +33,22 @@ export async function post(token, data, url) {
     }
 }
 
+export async function postFile(token, data, url) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `${token}`,
+        },
+        body: data,
+    })
+    const json = await response.json();
+    if (response.ok) {
+        return json;
+    } else {
+        throw new error(response.status, json);
+    }
+}
+
 export async function put(token, data, url) {
     const response = await fetch(url, {
         method: 'PUT',
