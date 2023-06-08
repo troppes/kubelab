@@ -13,6 +13,20 @@ import (
 	v1apps "k8s.io/api/apps/v1"
 )
 
+// labelsForClassroom returns the labels for selecting the resources.
+func labelsForClassroom(name string, student string) map[string]string {
+
+	return map[string]string{
+		"app.kubernetes.io/name":       "KubelabClassroom",
+		"app.kubernetes.io/instance":   name,
+		"app.kubernetes.io/version":    "1",
+		"app.kubernetes.io/part-of":    "classroom-operator",
+		"app.kubernetes.io/created-by": "controller-manager",
+		"class":                        name,
+		"student":                      student,
+	}
+}
+
 // namespaceForClass returns a namespace for the Kubelabuser.
 func (r *ClassroomReconciler) namespaceForClass(classroom *kubelabv1.Classroom) (*v1.Namespace, error) {
 	ns := &v1.Namespace{
@@ -231,9 +245,9 @@ func (r *ClassroomReconciler) persistentVolumeClaimForClassroom(class *kubelabv1
 		},
 	}
 
-	// if err := ctrl.SetControllerReference(class, claim, r.Scheme); err != nil {
-	// 	return nil, err
-	// }
+	if err := ctrl.SetControllerReference(class, claim, r.Scheme); err != nil {
+		return nil, err
+	}
 
 	return claim, nil
 }

@@ -49,10 +49,14 @@ type ClassroomReconciler struct {
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=classrooms/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=classrooms/finalizers,verbs=update
 
-//Custom RBAC for Namespace and Deploy
+//+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers,verbs=get;list;watch
+
+//Custom RBAC
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=deployments,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
@@ -62,7 +66,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err := r.Get(ctx, req.NamespacedName, classroom); err != nil {
 		if apierrors.IsNotFound(err) {
 			// If the custom resource is not found then, it usually means that it was deleted or not created
-			// In this way, we will stop the reconciliation
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -77,45 +80,32 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			log.Error(err, "Failed to update classroom status")
 			return ctrl.Result{}, err
 		}
-
-		if err := r.Get(ctx, req.NamespacedName, classroom); err != nil {
-			log.Error(err, "Failed to re-fetch classroom")
-			return ctrl.Result{}, err
-		}
+		return ctrl.Result{}, nil
 	}
 
 	// Finalizer to ensure deletion of NS
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers
-	if !controllerutil.ContainsFinalizer(classroom, classroomFinalizer) {
-		log.Info("Adding Finalizer to Classroom")
-		if ok := controllerutil.AddFinalizer(classroom, classroomFinalizer); !ok {
-			log.Error(errors.New("finalizer does not exist"), "Failed to add finalizer into the custom resource")
-			return ctrl.Result{Requeue: true}, nil
+	if classroom.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering our finalizer.
+		if !controllerutil.ContainsFinalizer(classroom, classroomFinalizer) {
+			controllerutil.AddFinalizer(classroom, classroomFinalizer)
+			if err := r.Update(ctx, classroom); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
 		}
-
-		if err := r.Update(ctx, classroom); err != nil {
-			log.Error(err, "Failed to update custom resource to add finalizer")
-			return ctrl.Result{}, err
-		}
-	}
-
-	// Check if the User instance is marked to be deleted
-	isClassroomMarkedToBeDeleted := classroom.GetDeletionTimestamp() != nil
-	if isClassroomMarkedToBeDeleted {
+	} else {
+		// The object is being deleted
 		if controllerutil.ContainsFinalizer(classroom, classroomFinalizer) {
-			log.Info("Performing Finalizer Operations for classroom before delete CR")
 
+			// Let's add here an status "Degraded" to define that this resource begin its process to be terminated.
 			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionUnknown, Reason: "Finalizing",
 				Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", classroom.Name)})
 
 			if err := r.Status().Update(ctx, classroom); err != nil {
 				log.Error(err, "Failed to update classroom status")
-				return ctrl.Result{}, err
-			}
-
-			if err := r.Get(ctx, req.NamespacedName, classroom); err != nil {
-				log.Error(err, "Failed to re-fetch classroom")
 				return ctrl.Result{}, err
 			}
 
@@ -129,7 +119,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 					log.Error(err, "Failed to delete Namespace", "Namespace Name", namespaceName)
 					return ctrl.Result{}, err
 				}
-				log.Info("Deleted Namespace", "Namespace Name", namespaceName)
 			}
 
 			// Re-fetch the Custom Resource after update the status to ensure latest state
@@ -147,17 +136,20 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 
-			log.Info("Removing Finalizer for classroom after successfully perform the operations")
+			log.Info("Successfully finalized classroom")
 			if ok := controllerutil.RemoveFinalizer(classroom, classroomFinalizer); !ok {
 				log.Error(err, "Failed to remove finalizer for classroom")
-				return ctrl.Result{Requeue: true}, nil
+				return ctrl.Result{}, nil
 			}
 
+			// remove our finalizer from the list and update it.
+			controllerutil.RemoveFinalizer(classroom, classroomFinalizer)
 			if err := r.Update(ctx, classroom); err != nil {
-				log.Error(err, "Failed to remove finalizer for classroom")
 				return ctrl.Result{}, err
 			}
 		}
+
+		// Stop reconciliation as the item is being deleted
 		return ctrl.Result{}, nil
 	}
 
@@ -165,23 +157,21 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	teacher := classroom.Spec.Teacher
 	students := classroom.Spec.EnrolledStudents
 	if teacher.Spec.Id == "" {
-		err := errors.New("teacher not set")
-		log.Error(err, "Teacher is an empty string")
-		return ctrl.Result{}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, errors.New("teacher not set")
 	} else {
 		kubelabUserList := &kubelabv1.KubelabUserList{}
 		r.Client.List(ctx, kubelabUserList)
 
 		for i := 0; i < len(students); i++ {
 			if err := r.List(ctx, kubelabUserList, client.MatchingFields{userOwnerKey: students[i].Spec.Id}); err != nil || len(kubelabUserList.Items) == 0 {
-				return ctrl.Result{}, errors.New("student does not exist: " + students[i].Spec.Id)
+				return ctrl.Result{RequeueAfter: time.Minute}, errors.New("student does not exist: " + students[i].Spec.Id)
 			}
 		}
 
 		if err := r.List(ctx, kubelabUserList, client.MatchingFields{userOwnerKey: teacher.Spec.Id}); err != nil || len(kubelabUserList.Items) == 0 {
-			return ctrl.Result{}, errors.New("teacher does not exist: " + teacher.Spec.Id)
+			return ctrl.Result{RequeueAfter: time.Minute}, errors.New("teacher does not exist: " + teacher.Spec.Id)
 		} else if !kubelabUserList.Items[0].Spec.IsTeacher {
-			return ctrl.Result{}, errors.New("user is not a teacher: " + teacher.Spec.Id)
+			return ctrl.Result{RequeueAfter: time.Minute}, errors.New("user is not a teacher: " + teacher.Spec.Id)
 		}
 	}
 
@@ -207,15 +197,13 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Creating a new NS", "Namespace Name", ns.Namespace)
-
 		if err = r.Create(ctx, ns); err != nil {
 			log.Error(err, "Failed to create new Namespace", "Namespace Name", ns.Namespace)
 			return ctrl.Result{}, err
 		}
 
 		// requeue the reconciliation so that we can ensure the state
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Namespace")
 		// Return the error for the reconciliation be re-trigged again
@@ -232,8 +220,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			// fetch full student object
 			studentList := &kubelabv1.KubelabUserList{}
 			if err := r.List(ctx, studentList, client.MatchingFields{userOwnerKey: student.Spec.Id}); err != nil || len(studentList.Items) == 0 {
-				log.Error(err, "Unable to find Student")
-				return ctrl.Result{}, err
+				return ctrl.Result{}, errors.New("unable to find Student")
 			}
 
 			// Define a new deployment
@@ -255,8 +242,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 
-			log.Info("Creating a new Deployment",
-				"Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 			if err = r.Create(ctx, dep); err != nil {
 				log.Error(err, "Failed to create new Deployment",
 					"Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
@@ -324,8 +309,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 
-			log.Info("Creating a new Service",
-				"Service.Namespace", svc.Namespace, "SVC.Name", svc.Name)
 			if err = r.Create(ctx, svc); err != nil {
 				log.Error(err, "Failed to create new Deployment",
 					"Deployment.Namespace", svc.Namespace, "SVC.Name", svc.Name)
@@ -362,7 +345,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 
-			log.Info("Creating a new NetworkPolicy")
 			if err = r.Create(ctx, np); err != nil {
 				log.Error(err, "Failed to create new NP")
 				return ctrl.Result{}, err
@@ -397,7 +379,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 					log.Error(err, "unable to delete old deployment")
 					return ctrl.Result{}, err
 				} else {
-					log.Info("Deleted Deployment", "Deployment Namespace", deploy.Namespace)
 					return ctrl.Result{}, err
 				}
 			}
@@ -426,8 +407,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Creating new PVC")
-
 		if err = r.Create(ctx, claim); err != nil {
 			log.Error(err, "Failed to create new PVC")
 			return ctrl.Result{}, err
@@ -450,20 +429,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	return ctrl.Result{}, nil
-}
-
-// labelsForClassroom returns the labels for selecting the resources.
-func labelsForClassroom(name string, student string) map[string]string {
-
-	return map[string]string{
-		"app.kubernetes.io/name":       "KubelabClassroom",
-		"app.kubernetes.io/instance":   name,
-		"app.kubernetes.io/version":    "1",
-		"app.kubernetes.io/part-of":    "classroom-operator",
-		"app.kubernetes.io/created-by": "controller-manager",
-		"class":                        name,
-		"student":                      student,
-	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -489,5 +454,7 @@ func (r *ClassroomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&v1apps.Deployment{}).
 		Owns(&v1.Namespace{}).
 		Owns(&v1.Service{}).
+		Owns(&v1.PersistentVolumeClaim{}).
+		Owns(&networkingv1.NetworkPolicy{}).
 		Complete(r)
 }

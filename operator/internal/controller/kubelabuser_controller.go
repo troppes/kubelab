@@ -48,13 +48,15 @@ type KubelabUserReconciler struct {
 
 // RBAC group to create and delete namespaces
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 
 func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	// Fetch the instance
 	user := &kubelabv1.KubelabUser{}
 	err := r.Get(ctx, req.NamespacedName, user)
-	log.Info(user.Name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// If the custom resource is not found then, it usually means that it was deleted or not created
@@ -72,35 +74,24 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			log.Error(err, "Failed to update User status")
 			return ctrl.Result{}, err
 		}
-
-		// re-fetch the Custom Resource after update the status to ensure latest state
-		if err := r.Get(ctx, req.NamespacedName, user); err != nil {
-			log.Error(err, "Failed to re-fetch user")
-			return ctrl.Result{}, err
-		}
+		return ctrl.Result{}, nil
 	}
 
 	// Finalizer to ensure deletion of NS
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers
-	if !controllerutil.ContainsFinalizer(user, userFinalizer) {
-		log.Info("Adding Finalizer to User")
-		if ok := controllerutil.AddFinalizer(user, userFinalizer); !ok {
-			log.Error(err, "Failed to add finalizer into the custom resource")
-			return ctrl.Result{Requeue: true}, nil
+	if user.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering our finalizer.
+		if !controllerutil.ContainsFinalizer(user, userFinalizer) {
+			controllerutil.AddFinalizer(user, userFinalizer)
+			if err := r.Update(ctx, user); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
 		}
-
-		if err = r.Update(ctx, user); err != nil {
-			log.Error(err, "Failed to update custom resource to add finalizer")
-			return ctrl.Result{}, err
-		}
-	}
-
-	// Check if the User instance is marked to be deleted, which is
-	// indicated by the deletion timestamp being set.
-	isUserMarkedToBeDeleted := user.GetDeletionTimestamp() != nil
-	if isUserMarkedToBeDeleted {
+	} else {
+		// The object is being deleted
 		if controllerutil.ContainsFinalizer(user, userFinalizer) {
-			log.Info("Performing Finalizer Operations for User before delete CR")
 
 			// Let's add here an status "Degraded" to define that this resource begin its process to be terminated.
 			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeDegraded,
@@ -122,7 +113,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 					log.Error(err, "Failed to delete Namespace", "Namespace Name", namespaceName)
 					return ctrl.Result{}, err
 				}
-				log.Info("Deleted Namespace", "Namespace Name", namespaceName)
 			}
 
 			// Re-fetch the Custom Resource after update the status to ensure latest state
@@ -140,17 +130,20 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				return ctrl.Result{}, err
 			}
 
-			log.Info("Removing Finalizer for user after successfully perform the operations")
+			log.Info("Successfully finalized User")
 			if ok := controllerutil.RemoveFinalizer(user, userFinalizer); !ok {
 				log.Error(err, "Failed to remove finalizer for user")
 				return ctrl.Result{Requeue: true}, nil
 			}
 
+			// remove our finalizer from the list and update it.
+			controllerutil.RemoveFinalizer(user, userFinalizer)
 			if err := r.Update(ctx, user); err != nil {
-				log.Error(err, "Failed to remove finalizer for user")
 				return ctrl.Result{}, err
 			}
 		}
+
+		// Stop reconciliation as the item is being deleted
 		return ctrl.Result{}, nil
 	}
 
@@ -177,17 +170,13 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Creating a new NS", "Namespace Name", ns.Name)
-
 		if err = r.Create(ctx, ns); err != nil {
 			log.Error(err, "Failed to create new Namespace", "Namespace Name", ns.Name)
 			return ctrl.Result{}, err
 		}
 
 		// Namespace created successfully
-		// We will requeue the reconciliation so that we can ensure the state
-		// and move forward for the next operations
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Namespace")
 		// Return the error for the reconciliation be re-trigged again
@@ -217,14 +206,12 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Creating new Role")
-
 		if err = r.Create(ctx, role); err != nil {
 			log.Error(err, "Failed to create new Role")
 			return ctrl.Result{}, err
 		}
-		// Requeue after 10 seconds to create Rolebinding
-		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
+		// Requeue after 2 seconds to create Rolebinding
+		return ctrl.Result{RequeueAfter: time.Second * 2}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Role")
 		// Return the error for the reconciliation be re-trigged again
@@ -254,13 +241,11 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Creating new Rolebinding")
-
 		if err = r.Create(ctx, roleBinding); err != nil {
 			log.Error(err, "Failed to create new Rolebinding")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Rolebinding")
 		// Return the error for the reconciliation be re-trigged again
@@ -290,13 +275,11 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Creating new PVC")
-
 		if err = r.Create(ctx, claim); err != nil {
 			log.Error(err, "Failed to create new PVC")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get PVC")
 		// Return the error for the reconciliation be re-trigged again
@@ -306,7 +289,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// The following implementation will update the status
 	meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
-		Message: fmt.Sprintf("Namespace for custom resource (%s) created successfully", user.Spec.Id)})
+		Message: "Finished Reconciling"})
 
 	if err := r.Status().Update(ctx, user); err != nil {
 		log.Error(err, "Failed to update user status")
