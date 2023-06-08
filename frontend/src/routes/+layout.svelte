@@ -1,5 +1,6 @@
 <script>
 	import { page } from '$app/stores';
+	import { SvelteToast } from '@zerodevx/svelte-toast';
 </script>
 
 <div>
@@ -28,5 +29,6 @@
 			{/if}
 		</div>
 	</header>
+	<SvelteToast />
 	<slot />
 </div>
