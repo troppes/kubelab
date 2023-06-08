@@ -121,12 +121,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				}
 			}
 
-			// Re-fetch the Custom Resource after update the status to ensure latest state
-			if err := r.Get(ctx, req.NamespacedName, classroom); err != nil {
-				log.Error(err, "Failed to re-fetch classroom")
-				return ctrl.Result{}, err
-			}
-
 			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionTrue, Reason: "Finalizing",
 				Message: fmt.Sprintf("Finalizer operations for custom resource %s name were successfully accomplished", classroom.Name)})
@@ -262,12 +256,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			deployment.Spec.Template.Spec.Containers[0].Image = image
 			if err = r.Update(ctx, deployment); err != nil {
 				log.Error(err, "Failed to update Deployment", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
-
-				// Re-fetch to ensure state
-				if err := r.Get(ctx, req.NamespacedName, classroom); err != nil {
-					log.Error(err, "Failed to re-fetch")
-					return ctrl.Result{}, err
-				}
 
 				// The following implementation will update the status
 				meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeDegraded,

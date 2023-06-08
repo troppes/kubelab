@@ -115,12 +115,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				}
 			}
 
-			// Re-fetch the Custom Resource after update the status to ensure latest state
-			if err := r.Get(ctx, req.NamespacedName, user); err != nil {
-				log.Error(err, "Failed to re-fetch user")
-				return ctrl.Result{}, err
-			}
-
 			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionTrue, Reason: "Finalizing",
 				Message: fmt.Sprintf("Finalizer operations for custom resource %s name were successfully accomplished", user.Name)})
