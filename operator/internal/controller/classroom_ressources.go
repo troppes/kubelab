@@ -161,11 +161,11 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 						VolumeMounts: []v1.VolumeMount{
 							{
 								Name:      "user-data",
-								MountPath: "/home/" + student.Name,
+								MountPath: "/home/" + student.Name + "/private",
 							},
 							{
 								Name:      "class-data",
-								MountPath: "/" + classroom.Name,
+								MountPath: "/home/" + student.Name + "/" + classroom.Name,
 							},
 						},
 					}},
@@ -231,9 +231,9 @@ func (r *ClassroomReconciler) persistentVolumeClaimForClassroom(class *kubelabv1
 		},
 	}
 
-	if err := ctrl.SetControllerReference(class, claim, r.Scheme); err != nil {
-		return nil, err
-	}
+	// if err := ctrl.SetControllerReference(class, claim, r.Scheme); err != nil {
+	// 	return nil, err
+	// }
 
 	return claim, nil
 }
