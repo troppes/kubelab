@@ -10,11 +10,10 @@ export async function GET({ request, params }) {
     try {
         token = decode(id_token);
     } catch (err) {
-        return new Response(JSON.stringify({ message: 'Invalid token' }), { status: 401, statusText: 'Error: Invalid token' });
+        return json({ message: 'Invalid token' }, { status: 401, statusText: 'Invalid token' });
     }
 
-    let response = new Response(JSON.stringify({ message: 'Internal server error' }), { status: 500 });
-
+    let response = json({ message: 'Internal server error' }, { status: 500, statusText: 'Internal Server Error' });
     if (token) {
         let kc = getKubeConfig(id_token, env.KUBERNETES_SERVER_URL, env.KUBERNETES_CA_Path);
         let k8sApi = kc.makeApiClient(k8s.CoreV1Api);
@@ -25,9 +24,9 @@ export async function GET({ request, params }) {
                 'ssh -p' + svcDetail.body.spec.ports[0].nodePort + ' ' +
                 token.preferred_username + '@' + env.LOADBALANCER_IP;
 
-            response = new Response(JSON.stringify(connectionString), { status: 200, statusText: 'Success' });
+            response = json(connectionString, { status: 200, statusText: 'Success' });
         } catch (err) {
-            response = new Response(JSON.stringify(err.body), { status: err.statusCode, statusText: err.body.message });
+            response = json({ message: err.body.message }, { status: err.statusCode, statusText: err.body.message });
         }
 
         return response;

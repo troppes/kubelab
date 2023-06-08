@@ -10,9 +10,9 @@ export async function PUT({ request, params }) {
     try {
         user_id = decode(id_token).user_id;
     } catch (err) {
-        return new Response(JSON.stringify({ message: 'Invalid token' }), { status: 401, statusText: 'Error: Invalid token' });
+        return json({ message: 'Invalid token' }, { status: 401, statusText: 'Invalid token' });
     }
-    let response = new Response(JSON.stringify({ message: 'Internal server error' }), { status: 500 });
+    let response = json({ message: 'Internal server error' }, { status: 500, statusText: 'Internal Server Error' });
 
     if (id_token) {
         let kc = getKubeConfig(id_token, env.KUBERNETES_SERVER_URL, env.KUBERNETES_CA_Path);
@@ -29,9 +29,9 @@ export async function PUT({ request, params }) {
             }
             try {
                 const res = await k8sApi.replaceNamespacedDeployment(deploy.metadata.name, user_id, deploy);
-                response = new Response(JSON.stringify(null), { status: 200, statusText: 'Success' });
+                response = json({}, { status: 200, statusText: 'Success' });
             } catch (err) {
-                response = new Response(JSON.stringify(err.body), { status: err.statusCode, statusText: err.body.message });
+                response = json({ message: err.body.message }, { status: err.statusCode, statusText: err.body.message });
             }
         }
 

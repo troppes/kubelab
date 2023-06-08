@@ -1,5 +1,6 @@
 import * as k8s from '@kubernetes/client-node';
 import { env } from '$env/dynamic/private';
+import { json } from '@sveltejs/kit';
 import { decode, getKubeConfig } from '$lib/helpers.js';
 import fs from "fs";
 import path from "path";
@@ -12,10 +13,10 @@ export async function POST({ request, fetch }) {
     try {
         token = decode(id_token);
     } catch (err) {
-        return new Response(JSON.stringify({ message: 'Invalid token' }), { status: 401, statusText: 'Error: Invalid token' });
+        return json({ message: 'Invalid token' }, { status: 401, statusText: 'Invalid token' });
     }
 
-    let response = new Response(JSON.stringify({ message: 'Internal server error' }), { status: 500 });
+    let response = json({ message: 'Internal server error' }, { status: 500, statusText: 'Internal Server Error' });
 
     if (id_token) {
         let kc = getKubeConfig(id_token, env.KUBERNETES_SERVER_URL, env.KUBERNETES_CA_Path);
@@ -41,13 +42,10 @@ export async function POST({ request, fetch }) {
                     'Authorization': `${id_token}`,
                 },
             });
-
-            response = new Response(JSON.stringify({ status: "ok" }), { status: 200, statusText: 'Success' });
+            response = json({}, { status: 200, statusText: 'Success' });
         } catch (err) {
-            console.log(err);
-            response = new Response(JSON.stringify(err), { status: "Failed to create File!", statusText: err });
+            response = json({ message: err }, { status: 500, statusText: "Failed to create file!" });
         }
-
         return response;
     }
 }
