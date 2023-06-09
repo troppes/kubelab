@@ -1,6 +1,4 @@
-Install Calico and Contour
-
-Afterwards install the updated contour service
+# Setup
 
 ## Kubeadm Init
 
@@ -20,25 +18,20 @@ kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
 
 Afterwards the `02-service-envoy.yaml` needs to be applied to configure the external ips if no load balancer is used.
 
-## KeyCloak
-
-Keycload isused to create the users
-
-Kubeadm upgrade kills the api server manifest
 
 ## Cert Manager
 
 ```
 kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.0/cert-manager.yaml
 ```
- and the apply the selfsigned-ca.yml to make selfsigned clusters
+and the apply the selfsigned-ca.yml to make selfsigned clusters
 
-## OIDC
+## KeyCloak
 
-For OIDC for install keycloak.yml and afterwards all Rolebindings
+Configuration of Keycloak can be found in the thesis.
+If the manifest ist upgraded during the kubeadm upgrade process, the api-server needs to be redeployed.
 
-
-### Test OIDC
+### Test OIDC-Connection
 
 ```
 kubectl oidc-login setup \--oidc-issuer-url=https://keycloak.kubelab.local/realms/kubelab \--oidc-client-id=kubelab \--oidc-client-secret=SECRET --insecure-skip-tls-verify
@@ -47,3 +40,4 @@ kubectl oidc-login setup \--oidc-issuer-url=https://keycloak.kubelab.local/realm
 ## nfs-provisioner
 
 The files here are modified to fit the puprose of the project. The original files can be found https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner
+They just need to be applied to the cluster and can be tested with the files in the example folder.
