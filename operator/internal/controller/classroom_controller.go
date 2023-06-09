@@ -48,7 +48,6 @@ type ClassroomReconciler struct {
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=classrooms,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=classrooms/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=classrooms/finalizers,verbs=update
-
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers,verbs=get;list;watch
 
 //Custom RBAC

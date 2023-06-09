@@ -146,8 +146,6 @@ spec:
                             - type
                             type: object
                           type: array
-                        mountName:
-                          type: string
                       type: object
                   type: object
                 type: array
@@ -257,8 +255,6 @@ spec:
                           - type
                           type: object
                         type: array
-                      mountName:
-                        type: string
                     type: object
                 type: object
               templateContainer:

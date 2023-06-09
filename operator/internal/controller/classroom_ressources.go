@@ -35,8 +35,6 @@ func (r *ClassroomReconciler) namespaceForClass(classroom *kubelabv1.Classroom) 
 		},
 	}
 
-	// Set the ownerRef for the Namespace for deletion of dependent, which does not seem to work with NS
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(classroom, ns, r.Scheme); err != nil {
 		return nil, err
 	}
@@ -208,8 +206,6 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 		},
 	}
 
-	// Set the ownerRef for the Deployment
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(classroom, deployment, r.Scheme); err != nil {
 		return nil, err
 	}

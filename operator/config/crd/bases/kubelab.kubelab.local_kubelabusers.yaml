@@ -112,8 +112,6 @@ spec:
                   - type
                   type: object
                 type: array
-              mountName:
-                type: string
             type: object
         type: object
     served: true

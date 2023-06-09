@@ -32,7 +32,6 @@ type KubelabUserSpec struct {
 // KubelabUserStatus defines the observed state of KubelabUser
 type KubelabUserStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-	MountName  string             `json:"mountName,omitempty"`
 }
 
 //+kubebuilder:object:root=true
