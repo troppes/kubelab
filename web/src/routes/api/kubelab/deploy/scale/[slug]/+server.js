@@ -6,12 +6,9 @@ import { decode, getKubeConfig } from '$lib/helpers.js';
 export async function PUT({ request, params }) {
     let id_token = request.headers.get('Authorization');
     let deployName = params.slug;
-    let user_id = '';
-    try {
-        user_id = decode(id_token).user_id;
-    } catch (err) {
-        return json({ message: 'Invalid token' }, { status: 401, statusText: 'Invalid token' });
-    }
+    let body = JSON.parse(await request.text())
+    let user_id = body.nameSpace;
+
     let response = json({ message: 'Internal server error' }, { status: 500, statusText: 'Internal Server Error' });
 
     if (id_token) {
@@ -31,6 +28,7 @@ export async function PUT({ request, params }) {
                 const res = await k8sApi.replaceNamespacedDeployment(deploy.metadata.name, user_id, deploy);
                 response = json({}, { status: 200, statusText: 'Success' });
             } catch (err) {
+                console.log(err)
                 response = json({ message: err.body.message }, { status: err.statusCode, statusText: err.body.message });
             }
         }

@@ -1,13 +1,11 @@
 <script ssr="false">
+	import { onMount, onDestroy } from 'svelte';
+	import { getDeployments, scaleDeployment, getConnectionString } from '$lib/kubelab-requests.js';
 	import { toast } from '@zerodevx/svelte-toast';
 
 	export let token;
-	export let deployments;
-	export let scaleDeployment;
-	export let getConnectionString;
-	export let teacherView;
-
-	deployments = { items: [] };
+	let interval;
+	let deployments = { items: [] };
 
 	const errorToast = (message) => {
 		toast.push(message, {
@@ -29,14 +27,28 @@
 		});
 	};
 
+	const renewDeployments = async () => {
+		deployments = await getDeployments(token);
+	};
+
+	// write onmount to fetch deployments
+	onMount(async () => {
+		try {
+			renewDeployments();
+			interval = setInterval(renewDeployments, 5000);
+		} catch (error) {
+			console.log(error);
+		}
+	});
+
+	onDestroy(() => {
+		// Clean up the interval when the component is destroyed
+		clearInterval(interval);
+	});
+
 	const connectionHandler = async (e) => {
 		try {
-			let deploy = deployments.items.find((d) => d.metadata.name == e.srcElement.dataset.id);
-			let string = await getConnectionString(
-				token,
-				{ nameSpace: deploy.metadata.labels.student, isTeacher: teacherView },
-				deploy.metadata.name
-			);
+			let string = await getConnectionString(token, e.srcElement.dataset.id);
 			navigator.clipboard
 				.writeText(string)
 				.then(() => successToast('Copied!'))
@@ -48,12 +60,8 @@
 
 	const scaleHandler = async (e) => {
 		try {
-			let deploy = deployments.items.find((d) => d.metadata.name == e.srcElement.dataset.id);
-			await scaleDeployment(
-				token,
-				{ nameSpace: deploy.metadata.labels.student, isTeacher: teacherView },
-				deploy.metadata.name
-			);
+			await scaleDeployment(token, e.srcElement.dataset.id);
+			deployments = await getDeployments(token); // pull updated list
 		} catch (error) {
 			deployments = error;
 		}
@@ -81,7 +89,7 @@
 						{#each deployments.items as deploy}
 							<tr>
 								<td>
-									{teacherView ? deploy.metadata.labels.student : deploy.metadata.name}
+									{deploy.metadata.name}
 								</td>
 								<td>
 									{deploy.spec.replicas == 1 ? 'On' : 'Off'}
@@ -119,10 +127,5 @@
 <style>
 	.details {
 		display: none;
-	}
-	table {
-		border-spacing: 10px;
-		border-collapse: separate;
-		text-align: center;
 	}
 </style>
