@@ -2,6 +2,7 @@ package controller
 
 const storageClass = "kubelab-client"
 const groupPrefix = "keycloak:"
+const kubelabPrefix = "kubelab:"
 
 // kubelabuser-controller constants
 const userFinalizer = "kubeuser.kubelab.local/finalizer"

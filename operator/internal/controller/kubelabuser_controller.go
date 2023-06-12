@@ -104,14 +104,32 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 
 			// Since the Owners Reference does not delete the Namespace the Finalizer is used
-			namespaceName := user.Spec.Id
 			ns := &v1.Namespace{}
-			err := r.Get(ctx, client.ObjectKey{Name: namespaceName}, ns)
-			if err == nil {
+			if err := r.Get(ctx, client.ObjectKey{Name: user.Spec.Id}, ns); err == nil {
 				err = r.Delete(ctx, ns)
 				if err != nil {
-					log.Error(err, "Failed to delete Namespace", "Namespace Name", namespaceName)
+					log.Error(err, "Failed to delete Namespace", "Name", user.Spec.Id)
 					return ctrl.Result{}, err
+				}
+			}
+			if user.Spec.IsTeacher {
+				roleBinding := &v1rbac.ClusterRoleBinding{}
+				err := r.Get(ctx, client.ObjectKey{Name: kubelabPrefix + "teacher"}, roleBinding)
+				if err == nil {
+					err = r.Delete(ctx, roleBinding)
+					if err != nil {
+						log.Error(err, "Failed to delete Rolebinding", "Name", user.Spec.Id)
+						return ctrl.Result{}, err
+					}
+				}
+
+				role := &v1rbac.ClusterRole{}
+				if err := r.Get(ctx, client.ObjectKey{Name: kubelabPrefix + "teacher"}, role); err == nil {
+					err = r.Delete(ctx, role)
+					if err != nil {
+						log.Error(err, "Failed to delete Role", "Name", user.Spec.Id)
+						return ctrl.Result{}, err
+					}
 				}
 			}
 
@@ -244,6 +262,76 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		log.Error(err, "Failed to get Rolebinding")
 		// Return the error for the reconciliation be re-trigged again
 		return ctrl.Result{}, err
+	}
+
+	// if User is a teacher give them the rights to list classes and students
+	if user.Spec.IsTeacher {
+		clusteRole := &v1rbac.ClusterRole{}
+		if err := r.Get(ctx, client.ObjectKey{Name: kubelabPrefix + "teacher"}, clusteRole); err != nil && apierrors.IsNotFound(err) {
+			// Define a new Role
+			clusteRole, err := r.roleForTeacher(user)
+
+			if err != nil {
+				log.Error(err, "Failed to define new Role resource for user")
+
+				// The following implementation will update the status
+				meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
+					Status: metav1.ConditionFalse, Reason: "Reconciling",
+					Message: fmt.Sprintf("Failed to create Role for the custom resource (%s): (%s)", user.Name, err)})
+
+				if err := r.Status().Update(ctx, user); err != nil {
+					log.Error(err, "Failed to update user status")
+					return ctrl.Result{}, err
+				}
+
+				return ctrl.Result{}, err
+			}
+
+			if err = r.Create(ctx, clusteRole); err != nil {
+				log.Error(err, "Failed to create new Role")
+				return ctrl.Result{}, err
+			}
+			// Requeue after 2 seconds to create Rolebinding
+			return ctrl.Result{RequeueAfter: time.Second * 2}, nil
+		} else if err != nil {
+			log.Error(err, "Failed to get Role")
+			// Return the error for the reconciliation be re-trigged again
+			return ctrl.Result{}, err
+		}
+
+		// Check if the Role already exists, if not create a new one and add rolebinding
+		clusteRoleBinding := &v1rbac.ClusterRoleBinding{}
+		if err := r.Get(ctx, client.ObjectKey{Name: kubelabPrefix + "teacher"}, clusteRoleBinding); err != nil && apierrors.IsNotFound(err) {
+			// Define a new Role
+			log.Info("REACHED")
+			clusteRoleBinding, err := r.roleBindingForTeacher(user)
+
+			if err != nil {
+				log.Error(err, "Failed to define new Rolebinding resource for user")
+
+				// The following implementation will update the status
+				meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
+					Status: metav1.ConditionFalse, Reason: "Reconciling",
+					Message: fmt.Sprintf("Failed to create Rolebinding for the custom resource (%s): (%s)", user.Name, err)})
+
+				if err := r.Status().Update(ctx, user); err != nil {
+					log.Error(err, "Failed to update user status")
+					return ctrl.Result{}, err
+				}
+
+				return ctrl.Result{}, err
+			}
+
+			if err = r.Create(ctx, clusteRoleBinding); err != nil {
+				log.Error(err, "Failed to create new Rolebinding")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		} else if err != nil {
+			log.Error(err, "Failed to get Rolebinding")
+			// Return the error for the reconciliation be re-trigged again
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Check if the Claim already exists, if not create a new Claim

@@ -89,6 +89,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      classroom.Name,
 			Namespace: student.Spec.Id,
+			Labels:    ls,
 		},
 		Spec: v1apps.DeploymentSpec{
 			Replicas: &replicas,

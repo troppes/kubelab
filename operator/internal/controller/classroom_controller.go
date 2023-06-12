@@ -146,7 +146,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	// Check validity of connected ressources
+	// Check validity of connected ressources TO BE REPLACED WITH A VALIDATION WEBHOOK
 	teacher := classroom.Spec.Teacher
 	students := classroom.Spec.EnrolledStudents
 	if teacher.Spec.Id == "" {

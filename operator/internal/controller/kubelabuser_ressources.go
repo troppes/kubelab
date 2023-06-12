@@ -134,3 +134,64 @@ func (r *KubelabUserReconciler) persistentVolumeClaimForUser(user *kubelabv1.Kub
 
 	return claim, nil
 }
+
+// roleForUser returns role to scale and get ressources inside the namespace.
+func (r *KubelabUserReconciler) roleForTeacher(teacher *kubelabv1.KubelabUser) (*v1rbac.ClusterRole, error) {
+
+	// Define the Role object
+	role := &v1rbac.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: kubelabPrefix + "teacher",
+		},
+		Rules: []v1rbac.PolicyRule{
+			{
+				APIGroups: []string{"apps"},
+				Resources: []string{"deployments"},
+				Verbs:     []string{"list", "scale", "update"},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{"pods", "services"},
+				Verbs:     []string{"get"},
+			},
+			{
+				APIGroups: []string{"kubelab.kubelab.local"},
+				Resources: []string{"classrooms"},
+				Verbs:     []string{"list"},
+			},
+		},
+	}
+
+	if err := ctrl.SetControllerReference(teacher, role, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return role, nil
+}
+
+// rolebindingForUser returns rolebinding to scale all ressources inside the namespace.
+func (r *KubelabUserReconciler) roleBindingForTeacher(teacher *kubelabv1.KubelabUser) (*v1rbac.ClusterRoleBinding, error) {
+
+	rb := &v1rbac.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: kubelabPrefix + "teacher",
+		},
+		Subjects: []v1rbac.Subject{
+			{
+				Kind: "Group",
+				Name: groupPrefix + "teacher",
+			},
+		},
+		RoleRef: v1rbac.RoleRef{
+			Kind:     "ClusterRole",
+			Name:     kubelabPrefix + "teacher",
+			APIGroup: "rbac.authorization.k8s.io",
+		},
+	}
+
+	if err := ctrl.SetControllerReference(teacher, rb, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return rb, nil
+}
