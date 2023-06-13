@@ -66,13 +66,14 @@ export async function put(token, data, url) {
     }
 }
 
-export async function deleteReq(token, url) { // delete is a special word
+export async function deleteReq(token, data, url) { // delete is a special word
     const response = await fetch(url, {
         method: 'DELETE',
         headers: {
             'Content-type': 'application/json',
             'Authorization': `${token}`,
         },
+        body: JSON.stringify(data),
     })
     const json = await response.json();
     if (response.ok) {

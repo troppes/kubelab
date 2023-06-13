@@ -303,7 +303,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		clusteRoleBinding := &v1rbac.ClusterRoleBinding{}
 		if err := r.Get(ctx, client.ObjectKey{Name: kubelabPrefix + "teacher"}, clusteRoleBinding); err != nil && apierrors.IsNotFound(err) {
 			// Define a new Role
-			log.Info("REACHED")
 			clusteRoleBinding, err := r.roleBindingForTeacher(user)
 
 			if err != nil {

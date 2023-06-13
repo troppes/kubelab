@@ -152,7 +152,7 @@ func (r *KubelabUserReconciler) roleForTeacher(teacher *kubelabv1.KubelabUser) (
 			{
 				APIGroups: []string{""},
 				Resources: []string{"pods", "services"},
-				Verbs:     []string{"get"},
+				Verbs:     []string{"get", "list"},
 			},
 			{
 				APIGroups: []string{"kubelab.kubelab.local"},

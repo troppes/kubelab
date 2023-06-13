@@ -24,3 +24,14 @@ export async function getStudentsForClass(token, name) {
     return get(token, '/api/kubelab/classes/students/' + name);
 }
 
+export async function uploadFiles(token, data, className) {
+    return postFile(token, data, '/api/kubelab/classes/files/upload/' + className);
+}
+
+export async function getFiles(token, name) {
+    return get(token, '/api/kubelab/classes/files/get/' + name);
+}
+
+export async function deleteFiles(token, data, name) {
+    return deleteReq(token, data, '/api/kubelab/classes/files/delete/' + name);
+}
