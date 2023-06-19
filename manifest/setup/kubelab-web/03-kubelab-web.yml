@@ -1,0 +1,107 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: kubelab-web-claim
+  namespace: kubelab-web
+spec:
+  storageClassName: nfs-client
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubelab-web-svc
+  namespace: kubelab-web
+  labels:
+    app: kubelab-web
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  selector:
+    app: kubelab-web
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubelab-web-deploy
+  namespace: kubelab-web
+  labels:
+    app: kubelab-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubelab-web
+  template:
+    metadata:
+      labels:
+        app: kubelab-web
+    spec:
+      containers:
+      - name: kubelab-web-pod
+        image: floreitz/kubelab-web:latest
+        envFrom:
+        - configMapRef:
+            name: webapp-config
+        ports:
+        - name: https
+          containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 80
+        volumeMounts:
+        - mountPath: /students
+          name: students
+        - mountPath: /classes
+          name: classes
+        - mountPath: /certs
+          name: kubelab-certs
+      volumes:
+      - name: classes
+        nfs:
+          server: 192.168.188.13
+          path: /srv/kubernetes/class
+      - name: students
+        nfs:
+          server: 192.168.188.13
+          path: /srv/kubernetes/student
+      - name: kubelab-certs
+        persistentVolumeClaim:
+          claimName: kubelab-web-claim
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubelab-web-ingress
+  namespace: kubelab-web
+  labels:
+    app: kubelab-web 
+  annotations:
+    cert-manager.io/cluster-issuer: kubelab-issuer
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/ingress.class: contour
+    kubernetes.io/tls-acme: "true"
+spec:
+  tls:
+  - secretName: keycloak-secret
+    hosts:
+    - web.kubelab.local
+  rules:
+  - host: web.kubelab.local
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: kubelab-web-svc
+            port:
+              number: 80

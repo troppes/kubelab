@@ -14,9 +14,6 @@ From website and then apply the custom-ressources
 For Version 1.30.0 exists a bug, that destroys the garbage collection, to fix you need to set the `bgpfilters` permission in the clusterrole `calico-crds`
 
 k edit clusterrole calico-crds
-```
-kubectl patch clusterrole calico-crds --type json --patch='[{"op":"add","path":"/rules/-","value":{"apiGroups":["crd.projectcalico.org"],"resources":["bgpfilters"],"verbs":["get","list","watch"]}}]'
-```
 
 
 ## Countour
