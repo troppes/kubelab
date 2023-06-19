@@ -75,6 +75,7 @@ input::file-selector-button {
     color: #fff;
     text-decoration: none;
     background: linear-gradient(145deg, #f9897c, #d27368);
+    border: 0px solid black;
 }
 
 .button:hover:not(:disabled) {

@@ -1,7 +1,7 @@
 version: "3"
 services:
   kubelab:
-    image: floreitz/kubelab_frontend:latest
+    image: floreitz/kubelab-web:latest
     container_name: kubelab
     restart: unless-stopped
     ports:
@@ -10,6 +10,7 @@ services:
     volumes:
       - user_data:/students
       - class_data:/classes
+      - ./certs:/certs
     environment:
       AUTH_SECRET: ${AUTH_SECRET}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
@@ -20,6 +21,8 @@ services:
       KUBERNETES_CA_Path: ${KUBERNETES_CA_Path}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
       NEXTAUTH_URL_INTERNAL: ${NEXTAUTH_URL_INTERNAL}
+      PRIVATE_KEY: ${PRIVATE_KEY}
+      CERTIFICATE: ${CERTIFICATE}
       # Needed if not vercel
       AUTH_TRUST_HOST: "true"
       # For development only

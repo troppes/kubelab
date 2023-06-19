@@ -1,12 +1,11 @@
 import { handler } from './handler.js';
-import { env } from './env.js';
 import express from 'express';
 import fs from 'fs';
 import http from 'http';
 import https from 'https';
 
-const privateKey = fs.readFileSync(env.PRIVATE_KEY, 'utf8');
-const certificate = fs.readFileSync(env.CERTIFICATE, 'utf8');
+const privateKey = fs.readFileSync(process.env.PRIVATE_KEY, 'utf8');
+const certificate = fs.readFileSync(process.env.CERTIFICATE, 'utf8');
 const credentials = { key: privateKey, cert: certificate };
 
 const app = express();
@@ -14,8 +13,8 @@ const app = express();
 const httpServer = http.createServer(app);
 const httpsServer = https.createServer(credentials, app);
 
-const PORT = env.PORT || 80;
-const SSLPORT = env.SSLPORT || 443;
+const PORT = process.env.PORT || 80;
+const SSLPORT = process.env.SSLPORT || 443;
 
 httpServer.listen(PORT, function () {
     console.log('HTTP Server is running on: http://localhost:%s', PORT);
