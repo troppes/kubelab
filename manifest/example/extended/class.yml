@@ -1,27 +1,4 @@
 apiVersion: kubelab.kubelab.local/v1
-kind: KubelabUser
-metadata:
-  name: s575103
-spec:
-  id: "575103"
----
-apiVersion: kubelab.kubelab.local/v1
-kind: KubelabUser
-metadata:
-  name: teacher
-spec:
-  id: "t01"
-  isTeacher: true
----
-apiVersion: kubelab.kubelab.local/v1
-kind: KubelabUser
-metadata:
-  name: teacher2
-spec:
-  id: "t02"
-  isTeacher: true
----
-apiVersion: kubelab.kubelab.local/v1
 kind: Classroom
 metadata:
   annotations:
