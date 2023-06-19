@@ -46,11 +46,16 @@ type KubelabUserReconciler struct {
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubelab.kubelab.local,resources=kubelabusers/finalizers,verbs=update
 
-// RBAC group to create and delete namespaces
+// RBAC group to create and delete ressources
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
+// to grant permissions the controller needs to have them as well
+//+kubebuilder:rbac:groups="apps",resources=deployments,verbs=get;list;watch;create;update;patch;delete;scale
+//+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
 
 func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
@@ -387,6 +392,8 @@ func (r *KubelabUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&v1.Namespace{}).
 		Owns(&v1rbac.Role{}).
 		Owns(&v1rbac.RoleBinding{}).
+		Owns(&v1rbac.ClusterRole{}).
+		Owns(&v1rbac.ClusterRoleBinding{}).
 		Owns(&v1.PersistentVolumeClaim{}).
 		Complete(r)
 }

@@ -52,10 +52,10 @@ type ClassroomReconciler struct {
 
 //Custom RBAC
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="apps",resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="networking.k8s.io",resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
@@ -384,7 +384,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Check if the Claim already exists, if not create a new Claim
 	claim := &v1.PersistentVolumeClaim{}
 	if err := r.Get(ctx, client.ObjectKey{Name: claimNameClass, Namespace: classroom.Name}, claim); err != nil && apierrors.IsNotFound(err) {
-		// Define a new Role
+		// Define a new PVC
 		claim, err := r.persistentVolumeClaimForClassroom(classroom)
 
 		if err != nil {
