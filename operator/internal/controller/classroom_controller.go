@@ -72,6 +72,15 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	// add label for later filtering
+	if classroom.Labels["teacher"] != classroom.Spec.Teacher.Spec.Id {
+		classroom.Labels = make(map[string]string)
+		classroom.Labels["teacher"] = classroom.Spec.Teacher.Spec.Id
+		if err := r.Update(ctx, classroom); err != nil {
+			log.Error(err, "Failed to update classroom")
+		}
+	}
+
 	// set the status as Unknown when no status are available
 	if classroom.Status.Conditions == nil || len(classroom.Status.Conditions) == 0 {
 		meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})

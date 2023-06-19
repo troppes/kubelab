@@ -18,11 +18,9 @@ export async function GET({ request }) {
         let kc = getKubeConfig(id_token, env.KUBERNETES_SERVER_URL, env.KUBERNETES_CA_Path);
         let k8sApi = kc.makeApiClient(k8s.CustomObjectsApi);
 
-        await k8sApi.listClusterCustomObject('kubelab.kubelab.local', 'v1', 'classrooms')
+        await k8sApi.listClusterCustomObject('kubelab.kubelab.local', 'v1', 'classrooms', null, null, null, null, `teacher=` + user_id)
             .then((res) => {
-                const classrooms = res.body.items.filter((classroom) =>
-                    JSON.parse(classroom.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration']).spec.teacher.spec.id === user_id
-                ).map((classroom) => {
+                const classrooms = res.body.items.map((classroom) => {
                     classroom.metadata.annotations = JSON.parse(classroom.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration']);
                     return classroom;
                 });
