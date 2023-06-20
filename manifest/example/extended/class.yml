@@ -5,7 +5,7 @@ metadata:
     nfs.io/storage-path: class
   name: java-classroom
 spec:
-  templateContainer: "floreitz/kubelab_base:latest"
+  templateContainer: "floreitz/kubelab-base:latest"
   allowUserRoot: "true"
   rootPass: "toor"
   teacher:
@@ -24,7 +24,7 @@ metadata:
 spec:
   allowUserRoot: "false"
   rootPass: "toor"
-  templateContainer: "floreitz/kubelab_base:latest"
+  templateContainer: "floreitz/kubelab-base:latest"
   teacher:
     spec:
       id: "t02"
@@ -42,7 +42,7 @@ spec:
   allowUserRoot: "false"
   rootPass: "toor"
   enableExamMode: "true"
-  templateContainer: "floreitz/kubelab_base:latest"
+  templateContainer: "floreitz/kubelab-base:latest"
   teacher:
     spec:
       id: "t01"

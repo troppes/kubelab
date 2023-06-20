@@ -29,7 +29,7 @@ RUN  apt -y install \
     rsyslog
 
 # enable bash-completeion for root user (other users works by default)
-RUN  (echo && echo '[ -f /etc/bash_completion ] && ! shopt -oq posix && . /etc/bash_completion') >> ~/.bashrc
+RUN  (echo && echo '[ -f /etc/bash_completion ] && ! shopt -oq posix && . /etc/bash_completion') >> /etc/skel/.bashrc
 
 # remove kernel log need
 RUN sed -i '/imklog/s/^/#/' /etc/rsyslog.conf
