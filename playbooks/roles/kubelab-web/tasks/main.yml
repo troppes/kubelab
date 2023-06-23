@@ -1,0 +1,50 @@
+---
+- name: Create a kubelab-system namespace
+  k8s:
+    name: kubelab-web
+    api_version: v1
+    kind: Namespace
+    state: present  
+
+- name: Copying manifest (ConfigMap)
+  template:
+    src: configmap.yml
+    dest: /tmp/kubelab-configmap.yml
+    owner: flo
+    group: flo
+    mode: '0777'
+
+- name: Copying manifest (Deployment)
+  template:
+    src: deployment.yml
+    dest: /tmp/kubelab-deployment.yml
+    owner: flo
+    group: flo
+    mode: '0777'
+
+- name: Create the ConfigMap
+  k8s:
+    state: present   
+    namespace: kubelab-web
+    src: /tmp/kubelab-configmap.yml
+
+- name: Create the Deployment
+  k8s:
+    state: present   
+    namespace: kubelab-web
+    src: /tmp/kubelab-deployment.yml
+
+- name: Copy folder
+  copy:
+    src: ../templates/certs
+    dest: /tmp
+
+- name: Wait for Pod to be ready
+  shell: kubectl wait --namespace=kubelab-web --for=jsonpath='{.status.phase}'=Running pods --selector app=kubelab-web --timeout=600s
+
+- name: Get pod name from Deployment
+  shell: kubectl get pod -l app=kubelab-web -o jsonpath='{.items[0].metadata.name}' -n kubelab-web
+  register: pod_name
+
+- name: Copy folder
+  command: kubectl cp /tmp/certs {{ pod_name.stdout }}:/ -n kubelab-web
