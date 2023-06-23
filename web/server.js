@@ -4,9 +4,26 @@ import fs from 'fs';
 import http from 'http';
 import https from 'https';
 
-const privateKey = fs.readFileSync(process.env.PRIVATE_KEY, 'utf8');
-const certificate = fs.readFileSync(process.env.CERTIFICATE, 'utf8');
-const credentials = { key: privateKey, cert: certificate };
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
+
+
+let credentials;
+let done = false;
+while (!done) {
+    try {
+        let privateKey = fs.readFileSync(process.env.PRIVATE_KEY, 'utf8');
+        let certificate = fs.readFileSync(process.env.CERTIFICATE, 'utf8');
+        credentials = { key: privateKey, cert: certificate };
+        done = true;
+    } catch (e) {
+        await sleep(10000)
+        console.error(e);
+    }
+}
 
 const app = express();
 
