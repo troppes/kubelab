@@ -1,0 +1,28 @@
+---
+- hosts: master
+  remote_user: "{{ user }}"
+  gather_facts: false
+  tasks:
+    - name: Get User Custom Resources
+      kubernetes.core.k8s_info:
+        api_version: kubelab.kubelab.local/v1
+        kind: KubelabUser
+      register: user_info
+
+    - name: Extract User names and teachers
+      set_fact:
+        user_info_list: >-
+          {{
+            user_info_list | default([]) +
+            [
+              {
+                'name': item.metadata.name,
+              }
+            ]
+          }}
+      loop: "{{ user_info.resources }}"
+      no_log: true
+
+    - name: Display User names and teachers
+      debug:
+        msg: "{{ user_info_list }}"

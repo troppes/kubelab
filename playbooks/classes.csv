@@ -1,0 +1,3 @@
+name,templateContainer,allowUserRoot,rootPass,teacher,enrolledStudents
+test-class,floreitz/kubelab-base:latest,true,toor,t03,"575103,575111"
+test2-class,floreitz/kubelab-base:latest,true,toor,t03,"575103,575111"

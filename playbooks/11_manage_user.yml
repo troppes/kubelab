@@ -1,0 +1,23 @@
+- name: Create custom resources from CSV
+  hosts: master
+  remote_user: "{{ user }}"
+  gather_facts: false
+  tasks:
+    - name: Read users from CSV file and return a list
+      community.general.read_csv:
+        path: users.csv
+      register: users
+      delegate_to: localhost
+
+    - name: Create KubelabUser custom resources from CSV
+      k8s:
+        state: "{{ 'absent' if delete is defined else 'present' }}"
+        definition:
+          apiVersion: kubelab.kubelab.local/v1
+          kind: KubelabUser
+          metadata:
+            name: "{{ item.name }}"
+          spec:
+            id: "{{ item.id }}"
+            isTeacher: "{{ item.isTeacher | bool }}"
+      with_items: "{{ users.list }}"

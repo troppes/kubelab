@@ -1,0 +1,20 @@
+---
+- hosts: master
+  remote_user: "{{ user }}"
+  gather_facts: false
+  tasks:
+    - name: Get Classroom Custom Resources
+      kubernetes.core.k8s_info:
+        api_version: kubelab.kubelab.local/v1
+        kind: Classroom
+      register: classroom_info
+
+    - name: Extract Classroom names and teachers
+      set_fact:
+        classroom_info_list: "{{ classroom_info.resources | json_query(query) }}"
+      vars:
+        query: "[].{name: metadata.name, teacher: metadata.labels.teacher, enrolledStudentIds: spec.enrolledStudents[].spec.id}"
+
+    - name: Display Classroom names and teachers
+      debug:
+        msg: "{{ classroom_info_list }}"

@@ -1,0 +1,54 @@
+- name: Create custom resources from CSV
+  hosts: master
+  remote_user: "{{ user }}"
+  gather_facts: false
+  tasks:
+    - name: Read users from CSV file and return a list
+      community.general.read_csv:
+        path: classes.csv
+      register: classes
+      delegate_to: localhost
+
+    - set_fact:
+        newClass: "{{ newClass | default([]) + 
+                    [
+                      item | combine({
+                          'enrolledStudents': item.enrolledStudents.split(',') 
+                              | map('regex_replace', '^(.*)$', '{\"spec\":{\"id\":\"\\1\"}}') 
+                              | map('from_json')
+                              | list
+                      })
+                    ] 
+                  }}"
+      loop: "{{ classes.list }}"
+
+    # - name: Create formatted list
+    #   set_fact:
+    #     formattedClass: "{{ formattedClass | default([]) + [{'spec': {'id': item}}] }}"
+    #   loop: "{{ newClass }}"
+
+    - name: Display formatted list
+      debug:
+        var: newClass
+
+
+    - name: Create KubelabUser custom resources from CSV
+      k8s:
+        state: "{{ 'absent' if delete is defined else 'present' }}"
+        definition:
+          apiVersion: kubelab.kubelab.local/v1
+          kind: Classroom
+          metadata:
+            annotations:
+              nfs.io/storage-path: class
+            name: "{{ item.name }}"
+          spec:
+            templateContainer: "{{ item.templateContainer }}"
+            allowUserRoot: "{{ item.allowUserRoot }}"
+            rootPass: "{{ item.rootPass }}"
+            teacher:
+              spec:
+                id: "{{ item.teacher }}"
+            enrolledStudents: "{{ item.enrolledStudents }}"
+            # enrolledStudents: [{spec: {id: "575103"}},{spec: {id: "575111"}}]
+      with_items: "{{ newClass }}"
