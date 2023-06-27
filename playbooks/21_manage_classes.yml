@@ -22,16 +22,6 @@
                   }}"
       loop: "{{ classes.list }}"
 
-    # - name: Create formatted list
-    #   set_fact:
-    #     formattedClass: "{{ formattedClass | default([]) + [{'spec': {'id': item}}] }}"
-    #   loop: "{{ newClass }}"
-
-    - name: Display formatted list
-      debug:
-        var: newClass
-
-
     - name: Create KubelabUser custom resources from CSV
       k8s:
         state: "{{ 'absent' if delete is defined else 'present' }}"
