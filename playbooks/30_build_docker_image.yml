@@ -1,0 +1,37 @@
+- name: Create new Docker Image
+  hosts: localhost
+  remote_user: "{{ local_user }}"
+  gather_facts: false
+  vars:
+    local_user: "flo"
+    base_image: "floreitz/node:latest"
+    ouput_image: "floreitz/kubelab-node:latest"
+
+  tasks:
+    - name: Copy entrypoint.sh
+      copy:
+        src: ../container/entrypoint.sh
+        dest: /tmp/kubelab_container/
+
+
+    - name: Create custom Dockerfile
+      copy:
+        content: |
+          FROM {{ base_image }}
+
+          WORKDIR /setup
+          COPY . .
+          RUN  (echo && echo '[ -f /etc/bash_completion ] && ! shopt -oq posix && . /etc/bash_completion') >> /etc/skel/.bashrc
+          RUN sed -i '/imklog/s/^/#/' /etc/rsyslog.conf
+          RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+          EXPOSE 22
+          CMD [ "sh", "entrypoint.sh" ]
+        dest: /tmp/kubelab_container/Dockerfile
+
+    - name: Build and push custom image
+      docker_image:
+        name: "{{ ouput_image }}"
+        source: build
+        push: true
+        build:
+          path: /tmp/kubelab_container

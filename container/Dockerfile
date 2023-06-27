@@ -28,6 +28,15 @@ RUN  apt -y install \
     openssh-server \ 
     rsyslog
 
+# install Node
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs
+
+# enable x11 support
+RUN apt -y install xauth x11-apps software-properties-common libgconf-2-4 xorg libnotify4 libnss3 libxss1 libatk1.0-0 libatk-bridge2.0-0 libgdk-pixbuf2.0-0 libgtk-3-0 libnss3-dev libxss-dev libasound2 dbus-x11 xvfb
+RUN sed -i "s/^.*X11Forwarding.*$/X11Forwarding yes/" /etc/ssh/sshd_config 
+RUN sed -i "s/^.*X11UseLocalhost.*$/X11UseLocalhost no/" /etc/ssh/sshd_config 
+RUN npm install -g electron@latest --unsafe-perm=true --allow-root
+
 # enable bash-completeion for root user (other users works by default)
 RUN  (echo && echo '[ -f /etc/bash_completion ] && ! shopt -oq posix && . /etc/bash_completion') >> /etc/skel/.bashrc
 
