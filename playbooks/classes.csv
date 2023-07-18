@@ -1,2 +1,3 @@
-name,templateContainer,allowUserRoot,rootPass,teacher,enrolledStudents
-javascript-class,floreitz/kubelab-node:latest,true,toor,t03,"575103,575111"
+name,templateContainer,allowUserRoot,enableExamMode,rootPass,teacher,enrolledStudents
+javascript-class,floreitz/kubelab-node:latest,false,true,toor,t03,"575103,575111"
+java-class,floreitz/kubelab-base:latest,true,false,toor,t03,"575103"

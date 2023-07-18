@@ -1,3 +1,6 @@
 name,id,isTeacher
 s575111,575111,false
+s575103,575103,false
+teacher1,t01,true
+teacher2,t02,true
 teacher3,t03,true

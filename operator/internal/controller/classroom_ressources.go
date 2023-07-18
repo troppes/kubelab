@@ -137,7 +137,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 								Add: []v1.Capability{
 									"SYS_CHROOT",
 									"AUDIT_WRITE",
-									"NET_RAW", // for ping but maybe not safe!
+									"NET_RAW",
 								},
 							},
 						},

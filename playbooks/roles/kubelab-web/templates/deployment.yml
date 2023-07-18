@@ -91,7 +91,7 @@ metadata:
     kubernetes.io/tls-acme: "true"
 spec:
   tls:
-  - secretName: keycloak-secret
+  - secretName: kubelab-secret
     hosts:
     - web.kubelab.local
   rules:
