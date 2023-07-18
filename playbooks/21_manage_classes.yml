@@ -36,9 +36,9 @@
             templateContainer: "{{ item.templateContainer }}"
             allowUserRoot: "{{ item.allowUserRoot }}"
             rootPass: "{{ item.rootPass }}"
+            enableExamMode: "{{ item.enableExamMode }}"
             teacher:
               spec:
                 id: "{{ item.teacher }}"
             enrolledStudents: "{{ item.enrolledStudents }}"
-            # enrolledStudents: [{spec: {id: "575103"}},{spec: {id: "575111"}}]
       with_items: "{{ newClass }}"
