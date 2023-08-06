@@ -47,6 +47,7 @@ spec:
       containers:
       - name: kubelab-web-pod
         image: floreitz/kubelab-web:latest
+        imagePullPolicy: Always
         envFrom:
         - configMapRef:
             name: webapp-config
