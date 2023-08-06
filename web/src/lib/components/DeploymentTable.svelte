@@ -30,8 +30,14 @@
 	};
 
 	const connectionHandler = async (e) => {
+		console.log('penis');
+		console.log(e.srcElement.dataset.student);
 		try {
-			let deploy = deployments.items.find((d) => d.metadata.name == e.srcElement.dataset.id);
+			let deploy = deployments.items.find(
+				(d) =>
+					d.metadata.name == e.srcElement.dataset.id &&
+					d.metadata.labels.student == e.srcElement.dataset.student
+			);
 			let string = await getConnectionString(
 				token,
 				{ nameSpace: deploy.metadata.labels.student, isTeacher: teacherView },
@@ -48,7 +54,11 @@
 
 	const scaleHandler = async (e) => {
 		try {
-			let deploy = deployments.items.find((d) => d.metadata.name == e.srcElement.dataset.id);
+			let deploy = deployments.items.find(
+				(d) =>
+					d.metadata.name == e.srcElement.dataset.id &&
+					d.metadata.labels.student == e.srcElement.dataset.student
+			);
 			await scaleDeployment(
 				token,
 				{ nameSpace: deploy.metadata.labels.student, isTeacher: teacherView },
@@ -87,14 +97,18 @@
 									{deploy.spec.replicas == 1 ? 'On' : 'Off'}
 								</td>
 								<td>
-									<button class="button" data-id={deploy.metadata.name} on:click={scaleHandler}
-										>{deploy.spec.replicas == 1 ? 'Stop' : 'Start'}</button
+									<button
+										class="button"
+										data-id={deploy.metadata.name}
+										data-student={deploy.metadata.labels.student}
+										on:click={scaleHandler}>{deploy.spec.replicas == 1 ? 'Stop' : 'Start'}</button
 									>
 								</td>
 								<td>
 									<button
 										class="button"
 										data-id={deploy.metadata.name}
+										data-student={deploy.metadata.labels.student}
 										disabled={!(deploy.status.availableReplicas == 1)}
 										on:click={connectionHandler}>Connect</button
 									>

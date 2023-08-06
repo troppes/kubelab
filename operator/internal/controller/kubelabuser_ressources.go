@@ -45,7 +45,7 @@ func (r *KubelabUserReconciler) roleForUser(user *kubelabv1.KubelabUser) (*v1rba
 			},
 			{
 				APIGroups: []string{""},
-				Resources: []string{"pods"},
+				Resources: []string{"services"},
 				Verbs:     []string{"get"},
 			},
 		},
@@ -147,7 +147,7 @@ func (r *KubelabUserReconciler) roleForTeacher(teacher *kubelabv1.KubelabUser) (
 			{
 				APIGroups: []string{"apps"},
 				Resources: []string{"deployments"},
-				Verbs:     []string{"list", "scale", "update"},
+				Verbs:     []string{"list", "scale", "update", "get"},
 			},
 			{
 				APIGroups: []string{""},

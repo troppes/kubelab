@@ -17,17 +17,13 @@ export async function GET({ request }) {
     if (id_token) {
         let kc = getKubeConfig(id_token, env.KUBERNETES_SERVER_URL, env.KUBERNETES_CA_Path);
         let k8sApi = kc.makeApiClient(k8s.CustomObjectsApi);
-
-        await k8sApi.listClusterCustomObject('kubelab.kubelab.local', 'v1', 'classrooms', null, null, null, null, `teacher=` + user_id)
+        await k8sApi.listClusterCustomObject('kubelab.kubelab.local', 'v1', 'classrooms', null, null, null, null, `teacher=${user_id}`)
             .then((res) => {
-                const classrooms = res.body.items.map((classroom) => {
-                    classroom.metadata.annotations = JSON.parse(classroom.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration']);
-                    return classroom;
-                });
-                response = json(classrooms, { status: 200, statusText: 'Success' });
+                response = json(res.body.items, { status: 200, statusText: 'Success' });
             })
             .catch((err) => {
-                response = json({ message: err.body.message }, { status: err.statusCode, statusText: err.body.message });
+                console.log(err);
+                // response = json({ message: err.body.message }, { status: err.statusCode, statusText: err.body.message });
             });
     }
     return response;

@@ -74,6 +74,7 @@
 			renewDeployments();
 			intervalClasses = setInterval(renewDeployments, 5000);
 			classes = await getClasses(token);
+			console.log(classes);
 		} catch (error) {
 			console.log(error);
 		}
@@ -116,7 +117,7 @@
 									>
 								</td>
 								<td>
-									{customClass.metadata.annotations.spec.enableExamMode || false}
+									{customClass.spec.enableExamMode || false}
 								</td>
 							</tr>
 						{/each}
