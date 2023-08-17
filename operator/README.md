@@ -1,8 +1,6 @@
-# kubelab
-// TODO(user): Add simple overview of use/purpose
+# Kubelab-Operator
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+This Operator manages the custom resources needed to run this project. There are two different custom resources: The Kubelab-User and Classrooms. Examples of both can be found in the `mainfest` folder. More details can be found inside the thesis.
 
 ## Getting Started
 You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
