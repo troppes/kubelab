@@ -1,5 +1,5 @@
 ---
-- name: Create a kubelab-system namespace
+- name: Create kubelab-system namespace
   k8s:
     name: kubelab-web
     api_version: v1
@@ -22,13 +22,13 @@
     group: flo
     mode: '0777'
 
-- name: Create the ConfigMap
+- name: Create configMap
   k8s:
     state: present   
     namespace: kubelab-web
     src: /tmp/kubelab-configmap.yml
 
-- name: Create the Deployment
+- name: Create deployment
   k8s:
     state: present   
     namespace: kubelab-web
@@ -39,10 +39,10 @@
     src: ../templates/certs
     dest: /tmp
 
-- name: Wait for Pod to be ready
+- name: Wait for pod to be ready
   shell: kubectl wait --namespace=kubelab-web --for=jsonpath='{.status.phase}'=Running pods --selector app=kubelab-web --timeout=600s
 
-- name: Get pod name from Deployment
+- name: Get pod name from deployment
   shell: kubectl get pod -l app=kubelab-web -o jsonpath='{.items[0].metadata.name}' -n kubelab-web
   register: pod_name
 

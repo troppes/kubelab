@@ -1,4 +1,4 @@
-- name: Create new Docker Image
+- name: Create new Docker image
   hosts: localhost
   remote_user: "{{ local_user }}"
   gather_facts: false
