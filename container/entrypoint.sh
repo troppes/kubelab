@@ -32,7 +32,7 @@ fi
 # Manually load skel
 cp -r /etc/skel/. /home/"$username"/
 
-# Set Folder rights, since the folder was created by the mount
+# Set folder rights, since the folder was created by the mount
 chmod 755 /home/"$username"
 chown -R "$username":"$username" /home/"$username"
 
