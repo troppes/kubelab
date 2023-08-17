@@ -15,3 +15,5 @@ const classroomFinalizer = "classroom.kubelab.local/finalizer"
 const classroomOwnerKey = ".metadata.namespace"
 const userOwnerKey = ".spec.id"
 const claimNameClass = "class-claim"
+
+const nfsServer = "1.2.3.4"

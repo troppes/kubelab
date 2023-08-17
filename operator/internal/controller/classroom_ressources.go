@@ -195,7 +195,7 @@ func (r *ClassroomReconciler) deploymentForClassroom(classroom *kubelabv1.Classr
 							Name: "class-data",
 							VolumeSource: v1.VolumeSource{
 								NFS: &v1.NFSVolumeSource{
-									Server:   "192.168.188.13",
+									Server:   nfsServer,
 									Path:     "/srv/kubernetes/class/" + classroom.Name, // path pattern in the storageClass defined
 									ReadOnly: true,
 								},

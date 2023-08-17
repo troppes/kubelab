@@ -169,7 +169,7 @@ func (r *KubelabUserReconciler) roleForTeacher(teacher *kubelabv1.KubelabUser) (
 	return role, nil
 }
 
-// rolebindingForUser returns rolebinding to scale all ressources inside the namespace.
+// roleBindingForTeacher returns rolebinding to give teachers the needed rights.
 func (r *KubelabUserReconciler) roleBindingForTeacher(teacher *kubelabv1.KubelabUser) (*v1rbac.ClusterRoleBinding, error) {
 
 	rb := &v1rbac.ClusterRoleBinding{

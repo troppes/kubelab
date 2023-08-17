@@ -324,7 +324,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err != nil && apierrors.IsNotFound(err) && isExam {
 			// Define a new network policy
 			np, err := r.networkPolicyForClassroom(classroom, &student)
-			// If failing write Error inside Status
+			// If failing write error inside status
 			if err != nil {
 				log.Error(err, "Failed to define new NP resource for Classroom")
 
@@ -356,7 +356,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				log.Info("Deleted NP", "Namespace", np.Namespace)
 			}
 			return ctrl.Result{}, err
-		} else if err != nil && !apierrors.IsNotFound(err) { // it another error than not found
+		} else if err != nil && !apierrors.IsNotFound(err) { // any other error than not found
 			log.Error(err, "Failed to get NetworkPolicy")
 			return ctrl.Result{}, err
 		}
@@ -381,7 +381,7 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	// Check if the Claim already exists, if not create a new Claim
+	// Check if the claim already exists, if not create a new claim
 	claim := &v1.PersistentVolumeClaim{}
 	if err := r.Get(ctx, client.ObjectKey{Name: claimNameClass, Namespace: classroom.Name}, claim); err != nil && apierrors.IsNotFound(err) {
 		// Define a new PVC
@@ -390,7 +390,6 @@ func (r *ClassroomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err != nil {
 			log.Error(err, "Failed to define new PVC resource for classroom")
 
-			// The following implementation will update the status
 			meta.SetStatusCondition(&classroom.Status.Conditions, metav1.Condition{Type: typeAvailable,
 				Status: metav1.ConditionFalse, Reason: "Reconciling",
 				Message: fmt.Sprintf("Failed to create PVC for the custom resource (%s): (%s)", classroom.Name, err)})

@@ -84,9 +84,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// Finalizer to ensure deletion of NS
 	if user.ObjectMeta.DeletionTimestamp.IsZero() {
-		// The object is not being deleted, so if it does not have our finalizer,
-		// then lets add the finalizer and update the object. This is equivalent
-		// registering our finalizer.
 		if !controllerutil.ContainsFinalizer(user, userFinalizer) {
 			controllerutil.AddFinalizer(user, userFinalizer)
 			if err := r.Update(ctx, user); err != nil {
@@ -98,7 +95,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// The object is being deleted
 		if controllerutil.ContainsFinalizer(user, userFinalizer) {
 
-			// Let's add here an status "Degraded" to define that this resource begin its process to be terminated.
 			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionUnknown, Reason: "Finalizing",
 				Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", user.Name)})
@@ -191,8 +187,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			log.Error(err, "Failed to create new Namespace", "Namespace Name", ns.Name)
 			return ctrl.Result{}, err
 		}
-
-		// Namespace created successfully
 		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Namespace")
@@ -210,7 +204,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if err != nil {
 			log.Error(err, "Failed to define new Role resource for user")
 
-			// The following implementation will update the status
 			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 				Status: metav1.ConditionFalse, Reason: "Reconciling",
 				Message: fmt.Sprintf("Failed to create Role for the custom resource (%s): (%s)", user.Spec.Id, err)})
@@ -227,7 +220,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			log.Error(err, "Failed to create new Role")
 			return ctrl.Result{}, err
 		}
-		// Requeue after 2 seconds to create Rolebinding
+		// Requeue after 2 seconds to create rolebinding
 		return ctrl.Result{RequeueAfter: time.Second * 2}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Role")
@@ -269,7 +262,7 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	// if User is a teacher give them the rights to list classes and students
+	// if user is a teacher give them the rights to list classes and students
 	if user.Spec.IsTeacher {
 		clusteRole := &v1rbac.ClusterRole{}
 		if err := r.Get(ctx, client.ObjectKey{Name: kubelabPrefix + "teacher"}, clusteRole); err != nil && apierrors.IsNotFound(err) {
@@ -279,7 +272,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			if err != nil {
 				log.Error(err, "Failed to define new Role resource for user")
 
-				// The following implementation will update the status
 				meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 					Status: metav1.ConditionFalse, Reason: "Reconciling",
 					Message: fmt.Sprintf("Failed to create Role for the custom resource (%s): (%s)", user.Name, err)})
@@ -348,7 +340,6 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if err != nil {
 			log.Error(err, "Failed to define new PVC resource for user")
 
-			// The following implementation will update the status
 			meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 				Status: metav1.ConditionFalse, Reason: "Reconciling",
 				Message: fmt.Sprintf("Failed to create PVC for the custom resource (%s): (%s)", user.Spec.Id, err)})
@@ -368,11 +359,9 @@ func (r *KubelabUserReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get PVC")
-		// Return the error for the reconciliation be re-trigged again
 		return ctrl.Result{}, err
 	}
 
-	// The following implementation will update the status
 	meta.SetStatusCondition(&user.Status.Conditions, metav1.Condition{Type: typeAvailable,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
 		Message: "Finished Reconciling"})
