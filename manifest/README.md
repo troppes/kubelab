@@ -1,48 +1,47 @@
 # Setup
 
-## Kubeadm Init
+## Kubeadm init
 
+Install kubeadm and set up the cluster. If you want to use the same Networking, that was used during the prototype use the following command:
 ```
 sudo kubeadm init --pod-network-cidr=192.168.178.0/24
 ```
 
 ## Calico
-```
-From website and then apply the custom-ressources
-```
 
-For Version 1.30.0 exists a bug, that destroys the garbage collection, to fix you need to set the `bgpfilters` permission in the clusterrole `calico-crds`
+The network addon chosen for the protoype was Calico, but any Networking addon should work. For the installation please refer to the Calico documentation.
 
-k edit clusterrole calico-crds
-
-
-## Countour
-```
-kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
-```
-
-Afterwards the `02-service-envoy.yaml` needs to be applied to configure the external ips if no load balancer is used.
-
+In Version 1.30.0 exists a bug, that destroys the Kubernetes garbage collection. To fix this, you need to set the `bgpfilters` permission in the clusterrole `calico-crds`. This can be done with the help of the `k edit clusterrole calico-crds` command.
 
 ## Cert Manager
 
-```
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.0/cert-manager.yaml
-```
-and the apply the selfsigned-ca.yml to make selfsigned clusters
+Cert-Manger was used to facilitate the certificate generation. For the installtion please refer to the Cert-Manager documentation. The setup includes a resource to install a selfsigned-issuer, making it possible to generate private certificates.
+
+## Countour
+
+Contour was used as the Ingress Controller, but any Ingress Controller sould work. For the installation please refer to the Contour documentation.
+After installing use the `02-service-envoy.yaml` to configure Contour to use external ips. This step is only required for bare bone clusters without and external load balancer.
 
 ## KeyCloak
 
-Configuration of Keycloak can be found in the thesis.
-If the manifest ist upgraded during the kubeadm upgrade process, the api-server needs to be redeployed.
+Keycloak is used as the OIDC provider for the webapp to the cluster. To install Keycloak, either refer to the documentation of use the manifest provided.
+It is important to state, that the integration of Keycloak into the cluster needs to be done manually. Helpful pointers can be found in the thesis and an example is within the Keycloak folder. If the manifest ist upgraded during the kubeadm upgrade process, the api-server needs to be redeployed.
 
 ### Test OIDC-Connection
 
+To test the OIDC connection to the cluster the following command can be used:
 ```
-kubectl oidc-login setup \--oidc-issuer-url=https://keycloak.kubelab.local/realms/kubelab \--oidc-client-id=kubelab \--oidc-client-secret=SECRET --insecure-skip-tls-verify
+kubectl oidc-login setup \--oidc-issuer-url=URL \--oidc-client-id=CLIENT_ID \--oidc-client-secret=SECRET --insecure-skip-tls-verify
 ```
 
-## nfs-provisioner
+## NFS-Provisioner
 
-The files here are modified to fit the puprose of the project. The original files can be found https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner
-They just need to be applied to the cluster and can be tested with the files in the example folder.
+The files here are modified to fit the puprose of the project. The original files can be found https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner. They just need to be applied to the cluster and can be tested with the files in the example folder.
+
+## Kubelab Operator
+
+The Kubelab Operator manages the custom resources needed for this protoype. The installation is done by using `k create`. Please note that `k apply` leads to an incomplete creation.
+
+## Kublab Web
+
+The Kubelab Web server is the main interactive component of the stack, allowing the users to manage their containers. To make it easier to deploy, please refer to the playbook.
