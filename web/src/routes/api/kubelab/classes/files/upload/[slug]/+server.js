@@ -36,9 +36,6 @@ export async function POST({ request, fetch, params }) {
                 }
                 fs.writeFileSync(filePath, Buffer.concat(buffers), 'binary');
             }
-
-
-
             response = json({}, { status: 200, statusText: 'Success' });
         } catch (err) {
             console.log(err)

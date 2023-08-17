@@ -68,11 +68,11 @@ spec:
       volumes:
       - name: classes
         nfs:
-          server: 192.168.188.13
+          server: 1.2.3.4
           path: /srv/kubernetes/class
       - name: students
         nfs:
-          server: 192.168.188.13
+          server: 1.2.3.4
           path: /srv/kubernetes/student
       - name: kubelab-certs
         persistentVolumeClaim:

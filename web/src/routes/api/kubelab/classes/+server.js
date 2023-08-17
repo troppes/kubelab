@@ -22,8 +22,7 @@ export async function GET({ request }) {
                 response = json(res.body.items, { status: 200, statusText: 'Success' });
             })
             .catch((err) => {
-                console.log(err);
-                // response = json({ message: err.body.message }, { status: err.statusCode, statusText: err.body.message });
+                response = json({ message: err.body.message }, { status: err.statusCode, statusText: err.body.message });
             });
     }
     return response;

@@ -31,10 +31,10 @@ volumes:
   user_data:
     driver_opts:
       type: "nfs"
-      o: "addr=192.168.188.13,nolock,soft,rw"
+      o: "addr=1.2.3.4,nolock,soft,rw"
       device: ":/srv/kubernetes/student"
   class_data:
     driver_opts:
       type: "nfs"
-      o: "addr=192.168.188.13,nolock,soft,rw"
+      o: "addr=1.2.3.4,nolock,soft,rw"
       device: ":/srv/kubernetes/class"
