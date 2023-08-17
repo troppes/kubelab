@@ -1,3 +1,7 @@
+# Kubelab-Web
+
+This folder contains the Svelte Application. To run the server locally please use `npm run dev`. A built version of the app can be deployed with the playbook provided.
+
 ## Building
 
 To create a production version of your app:
@@ -6,7 +10,7 @@ To create a production version of your app:
 npm run build
 ```
 
-This process outputs the App in the `release` folder. The custom server is added to the `release` folder under the name server.js. The app can be locally server by using `npm server`. !Warning! This functions expects the .env files to not contain any comments.
+This process outputs the App in the `release` folder. The custom server is added to the `release` folder under the name server.js. The app can be locally server by using `npm server`. !Warning! The function expects the .env files to not contain any comments.
 
 
 ## Certificates
