@@ -1,3 +1,4 @@
 /host_vars/master.yml
+/group_vars/all.yml
 /roles/kubelab-web/templates/certs/*
 !/roles/kubelab-web/templates/certs/README.md

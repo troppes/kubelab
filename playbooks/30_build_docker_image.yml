@@ -2,17 +2,12 @@
   hosts: localhost
   remote_user: "{{ local_user }}"
   gather_facts: false
-  vars:
-    local_user: "flo"
-    base_image: "floreitz/node:latest"
-    ouput_image: "floreitz/kubelab-node:latest"
 
   tasks:
     - name: Copy entrypoint.sh
       copy:
         src: ../container/entrypoint.sh
         dest: /tmp/kubelab_container/
-
 
     - name: Create custom Dockerfile
       copy:

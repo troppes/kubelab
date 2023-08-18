@@ -1,0 +1,3 @@
+local_user: "local_username"
+base_image: "repo/image:latest"
+ouput_image: "repo/image:latest"
