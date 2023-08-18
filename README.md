@@ -1,6 +1,8 @@
+<img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
+
 # Kubelab
 
-This repositoy contains all files needed to deploy Kubelab. Kubelab is a protoype created during the masters thesis to test out and demonstrate the capabilities of containers for educational use. 
+This repositoy contains all files needed to deploy Kubelab. Kubelab is a protoype created for my masters thesis to test out and demonstrate the capabilities of containers for educational use. 
 
 ## What exactly does Kubelab?
 
