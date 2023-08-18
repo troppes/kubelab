@@ -1,4 +1,4 @@
-name: build Kubelab-web
+name: build kubelab-container
 
 on:
     push:
