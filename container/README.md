@@ -4,4 +4,4 @@ This is a example container for the Kubelab system. It uses a custom entrypoint 
 
 ## X11 Forwarding
 
-to enable X11 forwarding dont forget to set the `DISPLAY` variable in your Operating system. In WSL2 the variable is automatically set!
+to enable X11 forwarding dont forget to set the `DISPLAY` variable in your Operating system. In WSL2 the variable is automatically set.

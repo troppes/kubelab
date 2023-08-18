@@ -25,5 +25,5 @@ Those two files allow for creating, updating and deleting the CRDS. For this ent
 
 ## Create own Docker Image
 
-To create your own compatible version of the Kubelab Docker Image, just run the `30_build_docker_image.yml` playbook. It will build the image and push it to the Docker Hub, with the needed configurations made. You can change the image name and tag, as well as all other settings in the `vars` section of the playbook.
+To create your own compatible version of the Kubelab Docker Image, just run the `30_build_docker_image.yml` playbook. It will build the image and push it to the Docker Hub, with the needed configurations made. You can change the image name and tag, as well as all other settings in the `group_vars/all.yml_dist`, which needs to be renamed to `group_vars/all.yml`.
 Please note, that in the image given, the entrypoint or cmd will be overwritten to use the script, that is needed for the setup. If you want to run any scripts, please use a simple run command in your base image. Please note that the image given needs to be unminimalized, as it needs to have the `bash` command available.
