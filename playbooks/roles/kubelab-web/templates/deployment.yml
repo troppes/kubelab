@@ -68,11 +68,11 @@ spec:
       volumes:
       - name: classes
         nfs:
-          server: 1.2.3.4
+          server: "{{ NFS_Server }}"
           path: /srv/kubernetes/class
       - name: students
         nfs:
-          server: 1.2.3.4
+          server: "{{ NFS_Server }}"
           path: /srv/kubernetes/student
       - name: kubelab-certs
         persistentVolumeClaim:
