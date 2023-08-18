@@ -3,7 +3,7 @@ name: build Kubelab-web
 on:
     push:
       branches: ['main']
-      paths: ['web/**']
+      paths: ['container/**']
 
 jobs:
   docker:
@@ -25,6 +25,6 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: "{{defaultContext}}:web"
+          context: "{{defaultContext}}:container"
           push: true
-          tags: floreitz/kubelab-web:latest
+          tags: floreitz/kubelab-base:latest
