@@ -1,0 +1,11 @@
+name,templateContainer,allowUserRoot,enableExamMode,rootPass,teacher,enrolledStudents
+javascript-class,floreitz/kubelab-base:latest,false,true,toor,t01,"575103,575111,575120,575102,575109"
+java-class,floreitz/kubelab-base:latest,true,false,toor,t01,"575103,575110,575107,575126,575119"
+python-class,floreitz/kubelab-base:latest,true,true,toor,t02,"575103,575111,575120,575124,575115"
+csharp-class,floreitz/kubelab-base:latest,false,true,toor,t02,"575102,575109,575116,575118,575122"
+cpp-class,floreitz/kubelab-base:latest,true,false,toor,t03,"575116,575125,575113,575127,575129"
+html-class,floreitz/kubelab-base:latest,true,true,toor,t03,"575103,575123,575108,575104,575121"
+css-class,floreitz/kubelab-base:latest,false,true,toor,t03,"575103,575101,575111,575120,575126"
+ruby-class,floreitz/kubelab-base:latest,true,false,toor,t01,"575103,575117,575126,575122,575109"
+php-class,floreitz/kubelab-base:latest,false,true,toor,t02,"575101,575104,575116,575120,575135"
+sql-class,floreitz/kubelab-base:latest,true,true,toor,t01,"575114,575117,575133,575131,575129"
