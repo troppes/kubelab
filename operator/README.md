@@ -2,6 +2,8 @@
 
 This Operator manages the custom resources needed to run this project. There are two different custom resources: The Kubelab-User and Classrooms. Examples of both can be found in the `mainfest` folder. More details can be found inside the thesis.
 
+To get local editing working, please edit the `internal/controller/constants.go_dist` file and rename it to `constants.go`. This file is ignored by git and will not be pushed to the repository.
+
 ## Getting Started
 You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
 **Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).

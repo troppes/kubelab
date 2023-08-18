@@ -24,3 +24,5 @@ Dockerfile.cross
 *.swp
 *.swo
 *~
+
+internal/controller/constants.go
