@@ -1,1 +1,2 @@
 setup/07-kubelab-web/02-private-configmap.yml
+setup/05-keycloak/api-server2/kube-apiserver.yml
