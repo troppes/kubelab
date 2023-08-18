@@ -1,2 +1,5 @@
-setup/07-kubelab-web/02-private-configmap.yml
+setup/03-contour/02-private-service-envoy.yml
+setup/04-nfs-provisioner/03-private-deployment.yml
 setup/05-keycloak/api-server/kube-apiserver.yml
+setup/07-kubelab-web/03-private-kubelab-web.yml
+setup/07-kubelab-web/02-private-configmap.yml
