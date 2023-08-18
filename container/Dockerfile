@@ -2,6 +2,8 @@ FROM ubuntu:22.04
 
 WORKDIR /setup
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 COPY . .
 
 # unminimize ubuntu to make commands available to users need
