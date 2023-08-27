@@ -37,16 +37,16 @@
 {#if $page.data.session}
 	{#if $page.data.session.user.roles.includes('teacher')}
 		<div class="container">
-			<h1>Welcome to Kubelab for Teachers</h1>
-			<p>Your Roles are: {$page.data.session?.user?.roles}</p>
+			<h1>Welcome to Kubelab for teachers</h1>
+			<p>Your roles are: {$page.data.session?.user?.roles}</p>
 
-			<h2>You classes</h2>
+			<h2>Your classes</h2>
 			<ClassTable {token} />
 		</div>
 	{:else}
 		<div class="container">
 			<h1>Welcome to Kubelab</h1>
-			<p>Your Roles are: {$page.data.session?.user?.roles}</p>
+			<p>Your roles are: {$page.data.session?.user?.roles}</p>
 			<SshUpload {token} />
 			<DeploymentTable {token} {deployments} {scaleDeployment} {getConnectionString} />
 		</div>
